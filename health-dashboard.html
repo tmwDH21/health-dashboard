@@ -1,0 +1,2657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Herman — Personal Health Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #22263a;
+    --border: #2e3252;
+    --accent: #6c8ebf;
+    --accent2: #5b7fa6;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --orange: #fb923c;
+    --red: #f87171;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --highlight: #3b4a6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+  }
+
+  header .subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .last-updated {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  nav {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .container { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .section-subtitle {
+    color: var(--muted);
+    margin-bottom: 28px;
+    font-size: 13px;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    .container { padding: 20px 16px; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+
+  .metric-big {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .metric-unit {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .metric-trend {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  .status-ok { color: var(--green); }
+  .status-warn { color: var(--yellow); }
+  .status-high { color: var(--orange); }
+  .status-danger { color: var(--red); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-ok { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+  .badge-warn { background: rgba(250, 204, 21, 0.15); color: var(--yellow); }
+  .badge-high { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+  .badge-danger { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+
+  .chart-container {
+    position: relative;
+    height: 220px;
+    margin-top: 12px;
+  }
+
+  .chart-container-lg {
+    position: relative;
+    height: 280px;
+    margin-top: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(46,50,82,0.5);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .pill {
+    background: var(--highlight);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .alert-box {
+    background: rgba(251, 146, 60, 0.08);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .alert-box.danger {
+    background: rgba(248, 113, 113, 0.08);
+    border-color: rgba(248, 113, 113, 0.3);
+  }
+
+  .alert-box.info {
+    background: rgba(108, 142, 191, 0.08);
+    border-color: rgba(108, 142, 191, 0.3);
+  }
+
+  .alert-box.success {
+    background: rgba(74, 222, 128, 0.06);
+    border-color: rgba(74, 222, 128, 0.25);
+  }
+
+  .alert-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .alert-body {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .icon { font-size: 16px; }
+
+  .range-bar-container {
+    margin-top: 12px;
+  }
+
+  .range-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .range-bar {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .range-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .range-marker {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: 16px;
+    background: white;
+    border-radius: 2px;
+    transform: translateX(-50%);
+  }
+
+  .med-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .med-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .med-dose {
+    color: var(--accent);
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .med-timing {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .tag-morning { background: rgba(250,204,21,0.15); color: #facc15; }
+  .tag-evening { background: rgba(147,112,219,0.2); color: #c084fc; }
+  .tag-anytime { background: rgba(108,142,191,0.15); color: var(--accent); }
+  .tag-food { background: rgba(74,222,128,0.12); color: var(--green); }
+  .tag-empty { background: rgba(251,146,60,0.12); color: var(--orange); }
+  .tag-caution { background: rgba(248,113,113,0.15); color: var(--red); }
+  .tag-prn { background: rgba(148,163,184,0.15); color: var(--muted); }
+
+  .med-note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  .rec-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .rec-item.priority-high { border-left-color: var(--orange); }
+  .rec-item.priority-critical { border-left-color: var(--red); }
+  .rec-item.priority-good { border-left-color: var(--green); }
+
+  .rec-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .rec-body { font-size: 12px; color: var(--muted); line-height: 1.65; }
+
+  .test-needed {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .test-priority {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .tp-urgent { background: rgba(248,113,113,0.2); color: var(--red); }
+  .tp-important { background: rgba(251,146,60,0.2); color: var(--orange); }
+  .tp-routine { background: rgba(108,142,191,0.2); color: var(--accent); }
+
+  .test-name { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .test-why { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .ov-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .ov-value { font-size: 28px; font-weight: 700; margin-bottom: 2px; }
+  .ov-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .ov-sub { font-size: 11px; margin-top: 4px; }
+
+  .timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-orange { background: var(--orange); }
+  .dot-red { background: var(--red); }
+
+  .scrollable { overflow-x: auto; }
+
+  /* HbA1c estimate note */
+  .data-note {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 8px;
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  @media (max-width: 900px) {
+    .overview-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* NEW: System Status Cards */
+  .system-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .system-card:hover { border-color: var(--accent); }
+  .system-card .system-icon { font-size: 28px; margin-bottom: 8px; }
+  .system-card .system-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .system-card .status-ring {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 8px 0;
+  }
+  .system-card .status-text { font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 6px; }
+  .system-card .status-key { font-size: 10px; color: var(--muted); }
+
+  /* NEW: Alert Rows */
+  .alert-strip { margin-bottom: 20px; }
+  .alert-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .alert-row:hover { background: var(--surface); border-left-color: var(--accent2); }
+  .alert-row .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+  .alert-row .alert-content { flex: 1; }
+  .alert-row .alert-label { font-weight: 600; color: var(--text); font-size: 13px; display: inline; }
+  .alert-row .alert-text { font-size: 12px; color: var(--muted); display: inline; }
+  .alert-row .toggle-expand { font-size: 10px; color: var(--accent); cursor: pointer; margin-left: 8px; }
+  .alert-detail {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .alert-detail.show { display: block; }
+
+  /* NEW: Timing Matrix */
+  .timing-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+  .timing-matrix th {
+    background: var(--surface2);
+    padding: 12px 10px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .timing-matrix td {
+    padding: 12px 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .timing-matrix .med-name {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .pill-badge {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 11px;
+    line-height: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin: 2px;
+  }
+  .pill-rx { background: #3b82f6; }
+  .pill-supp { background: #10b981; }
+  .pill-prn { background: #f97316; }
+
+  /* NEW: Med Cards Collapsible */
+  .med-card .med-note { display: none; }
+  .med-note-detail {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .med-note-detail.show { display: block; }
+  .toggle-notes-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toggle-notes-btn:hover { background: var(--border); }
+
+  /* NEW: Priority Tiles */
+  .priority-tile {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+  }
+  .priority-tile .priority-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .priority-tile .priority-content { flex: 1; }
+  .priority-tile .priority-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .priority-tile .priority-items { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .priority-tile .priority-items li { margin-bottom: 4px; }
+  .priority-tile .status-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 10px;
+    background: var(--surface2);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* NEW: Taper Progress */
+  .taper-progress {
+    margin: 16px 0;
+  }
+  .taper-bar-container {
+    background: var(--surface2);
+    border-radius: 8px;
+    height: 28px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .taper-bar-fill {
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--orange), var(--red));
+    height: 100%;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    min-width: 40px;
+  }
+  .taper-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* NEW: Daily Timeline */
+  .timeline-container {
+    display: flex;
+    gap: 0;
+    position: relative;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+  .timeline-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+    padding: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .timeline-slot {
+    flex: 1;
+    border-left: 2px solid var(--accent);
+    padding-left: 16px;
+    position: relative;
+    min-height: 60px;
+  }
+  .timeline-slot:last-child { border-left: none; }
+  .timeline-slot-time { font-size: 10px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .timeline-slot .pill-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .timeline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--accent);
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  /* NEW: CYP3A4 Interaction Grid */
+  .interaction-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border-left: 3px solid var(--orange);
+    margin: 20px 0;
+  }
+  .interaction-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .interaction-arrow {
+    font-size: 18px;
+    color: var(--orange);
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚕ Personal Health Dashboard</h1>
+    <div class="subtitle">David Herman · DOB 02/21/1967 · MRN 51984124 · PCP: Dr. Kiran Syed</div>
+  </div>
+  <div class="last-updated">
+    Data through: <strong>Feb 27, 2026</strong><br>
+    Dashboard built: March 1, 2026<br>
+    <span style="color:var(--orange)">⚠ Not a substitute for medical advice</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview')">Overview</button>
+  <button onclick="showTab('focus')">This Week</button>
+  <button onclick="showTab('schedule')">Daily Schedule</button>
+  <button onclick="showTab('labs')">Lab Results</button>
+  <button onclick="showTab('trends')">Trends</button>
+  <button onclick="showTab('medications')">Medications</button>
+  <button onclick="showTab('missing')">Missing Tests</button>
+  <button onclick="showTab('recommendations')">Recommendations</button>
+</nav>
+
+<div class="container">
+
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview" class="section active">
+    <div class="section-title">Health Overview</div>
+    <div class="section-subtitle">At-a-glance summary of your most recent results. Last draw: Feb 27, 2026.</div>
+
+    <div class="overview-grid">
+      <div class="ov-card">
+        <div class="ov-value status-ok">0.5</div>
+        <div class="ov-label">CRP (mg/L)</div>
+        <div class="ov-sub status-ok">✓ Excellent (&lt;5.0)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">&lt;1</div>
+        <div class="ov-label">ESR (mm/HR)</div>
+        <div class="ov-sub status-ok">✓ Excellent (0–20)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-warn">107</div>
+        <div class="ov-label">Fasting Glucose (mg/dL)</div>
+        <div class="ov-sub status-warn">⚠ Pre-diabetic zone</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">45.3</div>
+        <div class="ov-label">Vitamin D (ng/mL)</div>
+        <div class="ov-sub status-ok">✓ Now in range (31–80)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-high">87</div>
+        <div class="ov-label">ALT / SGPT (U/L)</div>
+        <div class="ov-sub status-high">⚠ Elevated (≤44)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-high">39</div>
+        <div class="ov-label">AST / SGOT (U/L)</div>
+        <div class="ov-sub status-high">⚠ Slightly high (≤34)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-warn">74</div>
+        <div class="ov-label">eGFR (mL/min/1.73m²)</div>
+        <div class="ov-sub status-warn">Monitor (age-adjusted low)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">63</div>
+        <div class="ov-label">LDL · Oct 2025 (mg/dL)</div>
+        <div class="ov-sub status-ok">✓ At target (&lt;70 for stent)</div>
+      </div>
+    </div>
+
+    <!-- Body Systems Status Panel -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;">System Status</h3>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+        
+        <div class="system-card">
+          <div class="system-icon">❤️</div>
+          <div class="system-name">Cardiac</div>
+          <div class="status-ring" style="background: rgba(74, 222, 128, 0.2); color: var(--green);">✓</div>
+          <div class="status-text">STABLE</div>
+          <div class="status-key">LDL 63 ✓</div>
+        </div>
+
+        <div class="system-card">
+          <div class="system-icon">🫀</div>
+          <div class="system-name">Hepatic</div>
+          <div class="status-ring" style="background: rgba(251, 146, 60, 0.2); color: var(--orange);">!</div>
+          <div class="status-text">WATCH</div>
+          <div class="status-key">ALT 87↑</div>
+        </div>
+
+        <div class="system-card">
+          <div class="system-icon">🩸</div>
+          <div class="system-name">Metabolic</div>
+          <div class="status-ring" style="background: rgba(250, 204, 21, 0.2); color: var(--yellow);">⚠</div>
+          <div class="status-text">WATCH</div>
+          <div class="status-key">Glucose 107</div>
+        </div>
+
+        <div class="system-card">
+          <div class="system-icon">🧠</div>
+          <div class="system-name">Neuro/Psych</div>
+          <div class="status-ring" style="background: rgba(108, 142, 191, 0.2); color: #6c8ebf;">→</div>
+          <div class="status-text">ACTIVE</div>
+          <div class="status-key">Ketamine week</div>
+        </div>
+
+        <div class="system-card">
+          <div class="system-icon">🦠</div>
+          <div class="system-name">Immune/Inflam</div>
+          <div class="status-ring" style="background: rgba(74, 222, 128, 0.2); color: var(--green);">✓</div>
+          <div class="status-text">EXCELLENT</div>
+          <div class="status-key">CRP 0.5 ✓</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Compact Alert Strip -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;">Key Alerts</h3>
+      <div class="alert-strip">
+        
+        <div class="alert-row" onclick="toggleAlertDetail(0)">
+          <div class="alert-icon">🔴</div>
+          <div class="alert-content">
+            <span class="alert-label">Liver enzymes elevated 8+ months</span>
+            <span class="alert-text">— hepatology workup needed</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-0" class="alert-detail">
+          Your ALT has been elevated since at least July 2025 (peak: 130 U/L in Jan 2026, currently 87 U/L). AST also intermittently elevated. Given your medication load — atorvastatin, metoprolol, Xanax, Suboxone, and prednisone — statin-induced hepatotoxicity or drug interaction is a real possibility. This needs a formal hepatology workup including hepatitis panel, GGT, and ultrasound if not already done. Do not ignore this trend.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(1)">
+          <div class="alert-icon">🟠</div>
+          <div class="alert-content">
+            <span class="alert-label">Glucose chronically pre-diabetic</span>
+            <span class="alert-text">— HbA1c needed</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-1" class="alert-detail">
+          Fasting glucose has been above 100 mg/dL on every recorded draw (101–114 mg/dL). Your eAG of 111 mg/dL corresponds to an estimated HbA1c around 5.5–5.6%. With cardiac stent, arteriosclerosis, and statin use, metabolic tightening here is high priority. A formal HbA1c result is needed — the trend graphs show 5 tests but the numeric values weren't extractable from the graph images.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(2)">
+          <div class="alert-icon">🟢</div>
+          <div class="alert-content">
+            <span class="alert-label">Vitamin D corrected</span>
+            <span class="alert-text">— D3 5000 IU working (45.3 ng/mL)</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-2" class="alert-detail">
+          Vitamin D was low (23.1 ng/mL) in September 2025 and is now 45.3 ng/mL as of Feb 2026 — a significant improvement. Your D3 5000 IU supplementation is effective. Target optimal range is 50–70 ng/mL; consider maintaining or very slightly increasing dose.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(3)">
+          <div class="alert-icon">🔴</div>
+          <div class="alert-content">
+            <span class="alert-label">Triglycerides spiked Oct 2025 (214 mg/dL)</span>
+            <span class="alert-text">— recheck needed</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-3" class="alert-detail">
+          Triglycerides jumped from 88 mg/dL (Aug 2025) to 214 mg/dL in October 2025 — a 143% increase in eight weeks. VLDL simultaneously rose to 43 mg/dL (normal ≤30). For context: Aug 2025 was excellent; something changed sharply between those two draws. Prednisone is a known triglyceride elevator, as is dietary sugar and refined carbohydrates. The bright side: LDL finally hit target (63 mg/dL) and HDL climbed from a Low of 38 (Nov 2024) to 60. But the triglyceride/VLDL picture needs a current fasting recheck — this data is now 5 months old.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(4)">
+          <div class="alert-icon">🟢</div>
+          <div class="alert-content">
+            <span class="alert-label">Inflammation excellent</span>
+            <span class="alert-text">— CRP 0.5, ESR &lt;1</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-4" class="alert-detail">
+          Both CRP (0.5 mg/L) and ESR (&lt;1 mm/HR) are now near-perfect. The elevated values seen in August–September 2025 (ESR up to 20, CRP up to 1.7) have fully normalized, likely reflecting the prednisone taper resolving underlying inflammation or autoimmune activity.
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- THIS WEEK TAB -->
+  <div id="tab-focus" class="section">
+    <div class="section-title">This Week's Focus</div>
+    <div class="section-subtitle">Three priorities that matter most right now. Updated March 2026.</div>
+
+    <!-- PRIORITY TILES -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px;">
+      <div class="priority-tile">
+        <div class="priority-indicator" style="background: linear-gradient(135deg, #f87171, #dc2626);">1</div>
+        <div class="priority-content">
+          <div class="priority-title">🔴 Ketamine Infusion</div>
+          <ul class="priority-items" style="list-style: none; padding: 0;">
+            <li>Single IV booster this week</li>
+            <li>Response expected 24–72h</li>
+            <li>No Xanax 48h before</li>
+          </ul>
+          <div class="status-badge" style="background: var(--red); color: #fff;">Active This Week</div>
+        </div>
+      </div>
+
+      <div class="priority-tile">
+        <div class="priority-indicator" style="background: linear-gradient(135deg, #fb923c, #ea580c);">2</div>
+        <div class="priority-content">
+          <div class="priority-title">🟠 Prednisone Taper</div>
+          <ul class="priority-items" style="list-style: none; padding: 0;">
+            <li>Current: 8.5mg daily</li>
+            <li>Drop to 8mg on Mar 17</li>
+            <li>Monitor for symptoms</li>
+          </ul>
+          <div class="status-badge" style="background: var(--orange); color: #000;">On Schedule</div>
+        </div>
+      </div>
+
+      <div class="priority-tile">
+        <div class="priority-indicator" style="background: linear-gradient(135deg, #facc15, #eab308);">3</div>
+        <div class="priority-content">
+          <div class="priority-title">🟡 Liver Workup</div>
+          <ul class="priority-items" style="list-style: none; padding: 0;">
+            <li>ALT elevated 8+ months</li>
+            <li>Order GGT, Hep panels</li>
+            <li>Hepatology referral</li>
+          </ul>
+          <div class="status-badge" style="background: var(--yellow); color: #000;">Urgent</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDNISONE TAPER PROGRESS -->
+    <div class="card" style="margin-bottom: 28px;">
+      <h3>Prednisone Taper Progress</h3>
+      <div class="taper-progress" style="margin-top: 16px;">
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: var(--text);">8.5mg today → 0mg est. November 2026</span>
+            <span style="color: var(--muted); font-size: 12px;">20% complete</span>
+          </div>
+          <div class="taper-bar-container">
+            <div class="taper-bar-fill" style="width: 20%; min-width: 60px;">20%</div>
+          </div>
+        </div>
+        <div class="taper-labels" style="margin-bottom: 16px;">
+          <div>
+            <div style="font-weight: 600; color: var(--text);">Now</div>
+            <div>8.5mg</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-weight: 600; color: var(--yellow);">Next</div>
+            <div>8mg (Mar 17)</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-weight: 600; color: var(--orange);">Physiologic</div>
+            <div>5mg (Jun 2026)</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 600; color: var(--green);">Zero</div>
+            <div>Nov 2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAPER TABLE - COLLAPSIBLE -->
+      <details style="margin-top: 16px;">
+        <summary style="padding: 10px; background: var(--surface2); border-radius: 4px; cursor: pointer; font-weight: 600; color: var(--accent); font-size: 12px;">
+          View full taper schedule (click to expand)
+        </summary>
+        <div style="margin-top: 12px; overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead><tr><th style="text-align: left; padding: 10px 12px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">Date</th><th style="text-align: left; padding: 10px 12px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">Dose</th><th style="text-align: left; padding: 10px 12px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">Status</th><th style="text-align: left; padding: 10px 12px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">Notes</th></tr></thead>
+            <tbody id="taperTable"></tbody>
+          </table>
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 12px; padding: 12px; background: var(--surface2); border-radius: 4px;">
+          At 0.5mg every 4 weeks from 8.5mg. Estimated completion: late November 2026. Adrenal recovery begins after zero — may take 6–12 additional months for full HPA normalization.
+        </div>
+      </details>
+    </div>
+
+    <!-- PRIORITY DETAILS -->
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="font-size: 14px; font-weight: 700; color: var(--red); margin-bottom: 12px;">Priority 1: Ketamine Infusion</h3>
+        <ul style="font-size: 13px; color: var(--muted); line-height: 1.8; list-style: none; padding: 0;">
+          <li><strong style="color: var(--text);">This week:</strong> Single IV booster infusion at your clinic.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">What to watch:</strong> Response within 24–72 hours — improved mood, reduced anhedonia, lifted cognitive weight. Effects often appear before the session is even over.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Key prep:</strong> No Xanax for 48 hours before the infusion. Benzodiazepines blunt ketamine's antidepressant mechanism directly. Mention this to your clinic if you haven't already.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Context:</strong> The 2025 failure almost certainly reflected HPA instability from rapid prednisone withdrawal — not a fundamental failure of ketamine. You're on a stable, slowly tapering base now. Different situation.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 12px;">Priority 2: Prednisone Taper</h3>
+        <ul style="font-size: 13px; color: var(--muted); line-height: 1.8; list-style: none; padding: 0;">
+          <li><strong style="color: var(--text);">Current dose:</strong> 8.5mg daily</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Next reduction:</strong> 8.0mg on March 17, 2026</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Watch for:</strong> Fatigue, brain fog, joint pain, anxiety flare — all signs the taper is moving faster than your adrenals can compensate. If any of these emerge significantly, hold at the current dose for another 2–4 weeks before dropping again.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Morning only:</strong> 7–9 AM with food. Every day. No exceptions.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Remember:</strong> The left leg pain came back when you dropped too fast. Slow is not failure — slow is the strategy.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size: 14px; font-weight: 700; color: var(--yellow); margin-bottom: 12px;">Priority 3: Liver Workup</h3>
+        <ul style="font-size: 13px; color: var(--muted); line-height: 1.8; list-style: none; padding: 0;">
+          <li><strong style="color: var(--text);">Status:</strong> ALT at 87 U/L for 8+ months. Still unresolved.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">What's needed:</strong></li>
+          <li style="margin-left: 16px;">— GGT (not yet ordered)</li>
+          <li style="margin-left: 16px;">— Hepatitis B &amp; C panels (if not done recently)</li>
+          <li style="margin-left: 16px;">— Liver ultrasound</li>
+          <li style="margin-left: 16px;">— Hepatology referral — not just PCP</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Most likely cause:</strong> Diltiazem inhibiting CYP3A4 → elevated atorvastatin levels → hepatotoxicity. Buprenorphine is a secondary candidate. Discuss a statin holiday or switch to rosuvastatin with your cardiologist.</li>
+          <li style="margin-top: 8px;"><strong style="color: var(--text);">Also needed soon:</strong> Fasting lipid panel to see where triglycerides stand post-October 2025 spike.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">Upcoming Action Items</h3>
+        <div style="margin-top:8px;">
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:16px; flex-shrink:0;">🔴</span>
+            <div><strong style="font-size:13px; color: var(--text);">Ketamine IV infusion</strong><div style="font-size:12px; color:var(--muted);">This week, March 2026. No Xanax 48h prior.</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:16px; flex-shrink:0;">🟠</span>
+            <div><strong style="font-size:13px; color: var(--text);">Drop to 8mg prednisone</strong><div style="font-size:12px; color:var(--muted);">March 17, 2026. Watch for symptoms.</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:16px; flex-shrink:0;">🟠</span>
+            <div><strong style="font-size:13px; color: var(--text);">Order GGT + Hep B/C panel</strong><div style="font-size:12px; color:var(--muted);">Liver workup — ask PCP this week.</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:16px; flex-shrink:0;">🟠</span>
+            <div><strong style="font-size:13px; color: var(--text);">Fasting lipid panel</strong><div style="font-size:12px; color:var(--muted);">Last one Oct 2025 — triglycerides were 214. Recheck needed.</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span style="font-size:16px; flex-shrink:0;">🟡</span>
+            <div><strong style="font-size:13px; color: var(--text);">Upload autoimmune test results</strong><div style="font-size:12px; color:var(--muted);">All negative — add to dashboard for completeness.</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 0;">
+            <span style="font-size:16px; flex-shrink:0;">🔵</span>
+            <div><strong style="font-size:13px; color: var(--text);">HbA1c numeric value</strong><div style="font-size:12px; color:var(--muted);">Ask for printed result — graphs only so far.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPRESSION/KETAMINE HISTORY -->
+    <div class="card">
+      <h3>Depression / Ketamine Treatment History</h3>
+      <ul style="font-size: 13px; color: var(--muted); line-height: 1.8; list-style: none; padding: 0;">
+        <li><strong style="color: var(--text);">Diagnosis:</strong> Treatment-resistant depression (TRD) — failed multiple SSRI trials.</li>
+        <li style="margin-top: 8px;"><strong style="color: var(--text);">Treatment:</strong> IV ketamine infusions at monitored clinic, 5+ years.</li>
+        <li style="margin-top: 8px;"><strong style="color: var(--text);">Efficacy:</strong> Very successful at managing depressive episodes when they arise.</li>
+        <li style="margin-top: 8px;"><strong style="color: var(--text);">2025 failure:</strong> Ketamine infusion did not hold during rapid prednisone taper. Current hypothesis: HPA axis instability prevented neuroplasticity from consolidating — not a direct pharmacological block.</li>
+        <li style="margin-top: 8px;"><strong style="color: var(--text);">March 2026:</strong> Single booster infusion scheduled. Stable prednisone taper and normalized inflammation markers create a significantly better biological foundation.</li>
+        <li style="margin-top: 8px;"><strong style="color: var(--text);">Xanax interaction:</strong> Avoid benzodiazepines 48h before any ketamine session — they blunt the glutamate/NMDA mechanism ketamine relies on.</li>
+      </ul>
+    </div>
+  </div>
+  <div id="tab-schedule" class="section">
+    <div class="section-title">Daily Medication Schedule</div>
+    <div class="section-subtitle">Visual timeline of medication timing throughout the day. Always confirm with your prescribers.</div>
+
+    <div class="timeline-container" style="flex-direction: column; gap: 0; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 28px;">
+      
+      <!-- BEFORE BREAKFAST -->
+      <div style="display: flex; border-bottom: 1px solid var(--border);">
+        <div class="timeline-marker" style="border-right: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700;">5:30–7am</div>
+          <div>Before<br>Breakfast</div>
+        </div>
+        <div class="timeline-slot" style="border-left: 3px solid var(--yellow);">
+          <div class="timeline-pill" style="background: #6366f1; margin-bottom: 8px;">
+            <span>🟣</span>
+            <span>Suboxone 4mg</span>
+          </div>
+          <div style="font-size: 11px; color: var(--muted);">Sublingual — empty mouth required</div>
+        </div>
+      </div>
+
+      <!-- MORNING 7-9am CLUSTER -->
+      <div style="display: flex; border-bottom: 1px solid var(--border);">
+        <div class="timeline-marker" style="border-right: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700;">7–9am</div>
+          <div>Morning<br>With Breakfast</div>
+        </div>
+        <div class="timeline-slot" style="border-left: 3px solid var(--yellow);">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <div class="timeline-pill" style="background: #f87171;"><span>●</span> Prednisone 8.5mg</div>
+            <div class="timeline-pill" style="background: #3b82f6;"><span>●</span> Metoprolol 50mg</div>
+            <div class="timeline-pill" style="background: #3b82f6;"><span>●</span> Diltiazem 120mg</div>
+            <div class="timeline-pill" style="background: #3b82f6;"><span>●</span> Valsartan 100mg</div>
+            <div class="timeline-pill" style="background: #3b82f6;"><span>●</span> Aspirin 81mg</div>
+            <div class="timeline-pill" style="background: #06b6d4;"><span>●</span> Eliquis 5mg</div>
+            <div class="timeline-pill" style="background: #10b981;"><span>●</span> Multi-vitamin</div>
+            <div class="timeline-pill" style="background: #10b981;"><span>●</span> K2+D3 5000IU</div>
+            <div class="timeline-pill" style="background: #10b981;"><span>●</span> Ubiquinol CoQ10</div>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 8px;">9 medications + supplements — with food</div>
+        </div>
+      </div>
+
+      <!-- MIDDAY -->
+      <div style="display: flex; border-bottom: 1px solid var(--border);">
+        <div class="timeline-marker" style="border-right: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700;">Noon–2pm</div>
+          <div>Midday<br>/ PRN</div>
+        </div>
+        <div class="timeline-slot" style="border-left: 3px solid var(--accent);">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <div class="timeline-pill" style="background: #8b5cf6;"><span>●</span> Zetia 10mg</div>
+            <div class="timeline-pill" style="background: #f97316;"><span>●</span> Adderall 2.5mg (PRN)</div>
+            <div class="timeline-pill" style="background: #f97316;"><span>●</span> Xanax 1–1.5mg (PRN)</div>
+            <div class="timeline-pill" style="background: #f97316;"><span>●</span> Ketamine IV (clinic)</div>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 8px;">Most as needed — clinic sessions for ketamine</div>
+        </div>
+      </div>
+
+      <!-- EVENING -->
+      <div style="display: flex;">
+        <div class="timeline-marker" style="border-right: 1px solid var(--border);">
+          <div style="font-size: 13px; font-weight: 700;">6–9pm</div>
+          <div>Evening<br>With Dinner</div>
+        </div>
+        <div class="timeline-slot" style="border-left: 3px solid #c084fc;">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <div class="timeline-pill" style="background: #f87171;"><span>●</span> Atorvastatin 40mg</div>
+            <div class="timeline-pill" style="background: #06b6d4;"><span>●</span> Eliquis 5mg</div>
+            <div class="timeline-pill" style="background: #10b981;"><span>●</span> Magnesium glycinate</div>
+            <div class="timeline-pill" style="background: #4f46e5;"><span>●</span> No screens / Sleep prep</div>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 8px;">With dinner — consistent bedtime critical</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ORIGINAL TEXT SCHEDULE - COLLAPSIBLE -->
+    <details style="margin-bottom: 28px;">
+      <summary style="padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--accent);">
+        View detailed text schedule (click to expand)
+      </summary>
+      <div style="margin-top: 12px;">
+        <div class="grid-3" style="margin-bottom:20px;">
+
+          <!-- MORNING -->
+          <div class="card" style="border-top:3px solid var(--yellow);">
+            <h3 style="color:var(--yellow);">☀️ Morning — With Breakfast (7–9 AM)</h3>
+            <div style="margin-top:12px;">
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Prednisone 8.5mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Morning-only. With food. Mimics natural cortisol peak — taking at night causes adrenal suppression and insomnia.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Metoprolol Succinate ER 50mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">With food — increases absorption ~40%. Do not crush or split.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Diltiazem ER 120mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Swallow whole — never crush. Avoid grapefruit juice entirely.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Valsartan 100mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">With or without food. Avoid NSAIDs (ibuprofen) — blunts effect and harms kidneys.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Aspirin EC 81mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">With food. Do not crush. Aligns with morning platelet activity peak.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Eliquis 5mg <span style="color:var(--accent); font-weight:400;">(dose #1)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">12 hours apart from evening dose. With food to reduce GI upset.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Suboxone 4mg <span style="color:var(--accent); font-weight:400;">(sublingual)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;"><strong>Before breakfast</strong> — dry mouth required. Nothing 15 min before. Place under tongue, let dissolve fully.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Multi-vitamin</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">With breakfast. Check for excess B3/niacin and iron — both problematic for your liver enzymes.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">K2 100mcg + D3 5000 IU</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Fat-soluble — take with the fattiest meal of your day (often breakfast or lunch). K2 directs D3-deposited calcium to bones not arteries.</div>
+              </div>
+
+              <div style="padding:12px 0;">
+                <div style="font-weight:600; font-size:13px;">Ubiquinol (CoQ10)</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">With fatty meal. Statin-depletion reversal — essential given atorvastatin use. 200–400mg therapeutic range.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MIDDAY / FLEXIBLE -->
+          <div class="card" style="border-top:3px solid var(--accent);">
+            <h3 style="color:var(--accent);">🌤 Midday / Flexible</h3>
+            <div style="margin-top:12px;">
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Zetia (Ezetimibe) 10mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Genuinely any time — no food requirement, no circadian preference. Take whenever is most consistent for you.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Adderall 2.5mg <span style="color:var(--muted); font-weight:400;">(PRN only)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Morning or early afternoon only — even this low dose disrupts sleep if taken late. Max 3x/week. Cardiologist should be aware.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Xanax 1–1.5mg <span style="color:var(--muted); font-weight:400;">(PRN only)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">As needed. <strong style="color:var(--red);">Avoid 48h before any ketamine infusion.</strong> Sparingly — CYP3A4 metabolism may be slower with elevated ALT, meaning effects last longer.</div>
+              </div>
+
+              <div style="padding:12px 0;">
+                <div style="font-weight:600; font-size:13px;">Ketamine IV <span style="color:var(--muted); font-weight:400;">(clinic sessions)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Booster infusion scheduled March 2026. Clinic-supervised IV only. No Xanax 48h prior. No significant food 4h prior (reduces nausea).</div>
+              </div>
+            </div>
+
+            <div style="margin-top:20px; padding:14px; background:var(--surface2); border-radius:8px;">
+              <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:6px;">⚠️ Grapefruit — Avoid Entirely</div>
+              <div style="font-size:11px; color:var(--muted); line-height:1.6;">Grapefruit and grapefruit juice inhibit CYP3A4 enzymes — the same pathway that metabolizes diltiazem, atorvastatin, and alprazolam. Even one glass can raise blood levels of these drugs unpredictably.</div>
+            </div>
+          </div>
+
+          <!-- EVENING -->
+          <div class="card" style="border-top:3px solid #c084fc;">
+            <h3 style="color:#c084fc;">🌙 Evening — With Dinner or Before Bed</h3>
+            <div style="margin-top:12px;">
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Atorvastatin 40mg</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Evening preferred — cholesterol synthesis peaks at night. With or without food. <strong style="color:var(--orange);">ALT is elevated — discuss statin holiday or rosuvastatin switch with your cardiologist (diltiazem interaction).</strong></div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Eliquis 5mg <span style="color:var(--accent); font-weight:400;">(dose #2)</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">~12 hours after morning dose. With dinner. Do not skip — consistent anticoagulation critical for AFib.</div>
+              </div>
+
+              <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:13px;">Magnesium (glycinate preferred)</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Evening or at bedtime — supports sleep quality, muscle relaxation, and AFib prevention. 200–400mg elemental. Glycinate form best tolerated.</div>
+              </div>
+
+              <div style="padding:12px 0;">
+                <div style="font-weight:600; font-size:13px;">No screens · Consistent bedtime</div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px;">Prednisone already disrupts sleep architecture. A consistent wake time (even after poor sleep) anchors your circadian rhythm more reliably than anything else. Room temp 65–68°F.</div>
+              </div>
+            </div>
+
+            <div style="margin-top:20px; padding:14px; background:var(--surface2); border-radius:8px;">
+              <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:6px;">📋 Weekly Check-in Questions</div>
+              <div style="font-size:11px; color:var(--muted); line-height:1.8;">
+                • Any new bruising or bleeding? (Eliquis + Aspirin)<br>
+                • Leg pain or swelling? (inflammatory flare monitor)<br>
+                • Sleep quality this week vs. last?<br>
+                • Mood: better, same, or worse since last ketamine?<br>
+                • Glucose feeling — crashes, spikes, fatigue after meals?
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Suboxone — Special Instructions</h3>
+          <div style="font-size:13px; color:var(--muted); line-height:1.8; margin-top:8px;">
+            Suboxone must be taken <strong style="color:var(--text);">sublingually (under the tongue)</strong>. The naloxone component is inactive when absorbed this way — if swallowed, it partially blocks buprenorphine's effects. Dry mouth is required for proper absorption: nothing to eat or drink for 15 minutes before. Let the film or tablet dissolve completely (5–10 minutes). Do not talk, swallow, or rinse during dissolution. For best consistency, take it before your morning medications and breakfast, then proceed with the rest of your morning stack once dissolved.
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <!-- LAB RESULTS TAB -->
+  <div id="tab-labs" class="section">
+    <div class="section-title">Complete Lab Results</div>
+    <div class="section-subtitle">All extracted values from your blood draw history (Oct 2024 – Feb 2026).</div>
+
+    <!-- Metabolic Panel -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>Comprehensive Metabolic Panel</h3>
+      <div class="scrollable">
+        <table>
+          <thead>
+            <tr>
+              <th>Marker</th>
+              <th>Oct 18, 2024</th>
+              <th>Jun 3, 2025</th>
+              <th>Jul 10, 2025</th>
+              <th>Sep 23, 2025</th>
+              <th>Oct 22, 2025</th>
+              <th>Jan 2, 2026</th>
+              <th>Jan 20, 2026</th>
+              <th>Feb 27, 2026</th>
+              <th>Normal Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Glucose</strong></td><td class="status-warn">105 H</td><td>—</td><td class="status-warn">101 H</td><td class="status-warn">114 H</td><td class="status-warn">108 H</td><td>98</td><td>—</td><td class="status-warn">107 H</td><td>74–100 mg/dL</td></tr>
+            <tr><td><strong>Sodium</strong></td><td>139</td><td>—</td><td>140</td><td>143</td><td>141</td><td>140</td><td>—</td><td>139</td><td>136–145 mmol/L</td></tr>
+            <tr><td><strong>Potassium</strong></td><td>4.8</td><td>—</td><td>4.9</td><td>4.8</td><td>4.3</td><td>4.0</td><td>—</td><td>4.1</td><td>3.5–5.2 mmol/L</td></tr>
+            <tr><td><strong>Chloride</strong></td><td>106</td><td>—</td><td>103</td><td>103</td><td>103</td><td>102</td><td>—</td><td>103</td><td>98–107 mmol/L</td></tr>
+            <tr><td><strong>CO2/Bicarb</strong></td><td>29</td><td>—</td><td>28</td><td>28</td><td>26</td><td>31 H</td><td>—</td><td>26</td><td>22–30 mmol/L</td></tr>
+            <tr><td><strong>Anion Gap</strong></td><td>9</td><td>—</td><td>14</td><td>17</td><td>16</td><td>11</td><td>—</td><td>14</td><td>9–18 mmol/L</td></tr>
+            <tr><td><strong>BUN</strong></td><td>12</td><td>—</td><td>13</td><td>16</td><td>11</td><td>15</td><td>—</td><td>16</td><td>9–24 mg/dL</td></tr>
+            <tr><td><strong>Creatinine</strong></td><td>—</td><td>—</td><td>0.99</td><td>1.07</td><td>1.08</td><td>1.16</td><td>—</td><td>1.14</td><td>0.60–1.30 mg/dL</td></tr>
+            <tr><td><strong>eGFR</strong></td><td>&gt;60</td><td>—</td><td>88</td><td>—</td><td>80</td><td>73</td><td>—</td><td>74</td><td>≥60 mL/min (age 50–59: 60–90)</td></tr>
+            <tr><td><strong>Calcium</strong></td><td>9.0</td><td>—</td><td>8.9</td><td>9.4</td><td>9.5</td><td>9.5</td><td>—</td><td>9.6</td><td>8.4–10.3 mg/dL</td></tr>
+            <tr><td><strong>Albumin</strong></td><td>—</td><td>—</td><td>4.4</td><td>5.0</td><td>5.0</td><td>4.9</td><td>4.6</td><td>4.7</td><td>3.5–5.0 g/dL</td></tr>
+            <tr><td><strong>Total Protein</strong></td><td>6.9</td><td>6.6</td><td>6.6</td><td>7.1</td><td>6.9</td><td>6.5</td><td>6.6</td><td>6.4</td><td>6.4–8.3 g/dL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Liver Panel -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>Hepatic / Liver Function Panel</h3>
+      <div class="scrollable">
+        <table>
+          <thead>
+            <tr>
+              <th>Marker</th>
+              <th>Oct 18, 2024</th>
+              <th>Jul 10, 2025</th>
+              <th>Sep 23, 2025</th>
+              <th>Oct 22, 2025</th>
+              <th>Jan 2, 2026</th>
+              <th>Jan 20, 2026</th>
+              <th>Feb 27, 2026</th>
+              <th>Normal Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>ALK Phos</strong></td><td class="status-high">157 H</td><td>127</td><td>107</td><td>103</td><td>78</td><td>83</td><td>85</td><td>40–150 U/L</td></tr>
+            <tr><td><strong>AST (SGOT)</strong></td><td>15</td><td>15</td><td>23</td><td>28</td><td class="status-high">38 H</td><td>32</td><td class="status-high">39 H</td><td>5–34 U/L</td></tr>
+            <tr><td><strong>ALT (SGPT)</strong></td><td>29</td><td class="status-high">59 H</td><td>44</td><td class="status-high">85 H</td><td class="status-high">130 H</td><td class="status-high">85 H</td><td class="status-high">87 H</td><td>≤44 U/L</td></tr>
+            <tr><td><strong>Bilirubin, Total</strong></td><td>0.4</td><td>0.7</td><td>0.8</td><td>0.6</td><td>1.1</td><td>0.8</td><td>0.8</td><td>0.3–1.2 mg/dL</td></tr>
+            <tr><td><strong>Bili, Conjugated</strong></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0.4</td><td>—</td><td>0.0–0.5 mg/dL</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="data-note">* ALK Phos was elevated in Oct 2024 (157) but has since normalized. ALT has been consistently elevated since Jul 2025 — peaked at 130 in Jan 2026 and remains at 87 as of Feb 2026. This warrants active investigation.</div>
+    </div>
+
+    <!-- CBC -->
+    <div class="card" style="margin-bottom:20px">
+      <h3>Complete Blood Count (CBC) — Most Recent: Feb 27, 2026</h3>
+      <div class="grid-2">
+        <table>
+          <thead><tr><th>Marker</th><th>Value</th><th>Range</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>WBC</td><td>5.03 K/UL</td><td>4.00–11.00</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>RBC</td><td>4.54 m/uL</td><td>4.00–5.70</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Hemoglobin</td><td>14.2 g/dL</td><td>13.0–18.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Hematocrit</td><td>40.9%</td><td>40.0–52.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>MCV</td><td>90.1 FL</td><td>77.0–98.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>MCH</td><td>31.3 PG</td><td>26.0–32.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>MCHC</td><td>34.7 G/DL</td><td>32.0–36.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>RDW</td><td>12.7%</td><td>11.6–14.4</td><td><span class="badge badge-ok">Normal</span></td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>Marker</th><th>Value</th><th>Range</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Platelets</td><td>161 K/UL</td><td>150–400</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>MPV</td><td>11.8 FL</td><td>9.4–12.4</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Neutrophils</td><td>62.2%</td><td>40.0–70.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Lymphocytes</td><td>27.8%</td><td>19.0–45.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Monocytes</td><td>8.0%</td><td>4.7–12.5</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Eosinophils</td><td>1.4%</td><td>0.1–7.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Basophils</td><td>0.4%</td><td>0.0–2.0</td><td><span class="badge badge-ok">Normal</span></td></tr>
+            <tr><td>Neutro Absolute</td><td>3.13 K/UL</td><td>1.80–7.70</td><td><span class="badge badge-ok">Normal</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="data-note">Note: Platelets at 161 are within normal range but on the lower end — worth watching given Eliquis use.</div>
+    </div>
+
+    <!-- Inflammation -->
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3>Inflammation Markers</h3>
+        <table>
+          <thead><tr><th>Date</th><th>CRP (mg/L)</th><th>ESR (mm/HR)</th></tr></thead>
+          <tbody>
+            <tr><td>Feb 27, 2026</td><td class="status-ok">0.5</td><td class="status-ok">&lt;1</td></tr>
+            <tr><td>Jan 2, 2026</td><td class="status-ok">0.6</td><td class="status-ok">1</td></tr>
+            <tr><td>Nov 4, 2025</td><td class="status-ok">0.6</td><td class="status-ok">1</td></tr>
+            <tr><td>Sep 23, 2025</td><td>1.7</td><td class="status-warn">12</td></tr>
+            <tr><td>Aug 5, 2025</td><td>1.4</td><td class="status-warn">20 ⚠</td></tr>
+          </tbody>
+        </table>
+        <div class="data-note">Normal: CRP &lt;5.0, ESR 0–20. For cardiovascular risk, optimal CRP is &lt;1.0 mg/L (high-sensitivity). Excellent trajectory.</div>
+      </div>
+      <div class="card">
+        <h3>Vitamin D &amp; Glucose Metrics</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Vitamin D (ng/mL)</th><th>eAG (mg/dL)</th></tr></thead>
+          <tbody>
+            <tr><td>Feb 27, 2026</td><td class="status-ok">45.3</td><td>111.15</td></tr>
+            <tr><td>Oct 22, 2025</td><td class="status-warn">30.3 L</td><td>116.89</td></tr>
+            <tr><td>Sep 23, 2025</td><td class="status-warn">23.1 L</td><td>111.15</td></tr>
+            <tr><td>Jul 10, 2025</td><td>—</td><td class="status-warn">131.24 H</td></tr>
+            <tr><td>Jan 2, 2026</td><td class="status-warn">28.9 L</td><td>—</td></tr>
+            <tr><td>Oct 18, 2024</td><td>—</td><td>114.02</td></tr>
+          </tbody>
+        </table>
+        <div class="data-note">eAG of 111 corresponds roughly to HbA1c ~5.5%. Target eAG &lt;100 (HbA1c &lt;5.7%). Vitamin D has dramatically improved with supplementation.</div>
+      </div>
+    </div>
+
+    <!-- Lipids -->
+    <div class="card">
+      <h3>Lipid Panel</h3>
+      <div class="scrollable">
+        <table>
+          <thead><tr><th>Date</th><th>Total Cholesterol</th><th>HDL</th><th>LDL</th><th>Triglycerides</th><th>Non-HDL</th><th>VLDL</th></tr></thead>
+          <tbody>
+            <tr><td>Oct 22, 2025</td><td class="status-ok">166</td><td class="status-ok">60</td><td class="status-ok">63 ✓</td><td class="status-danger">214 H</td><td>106</td><td class="status-danger">43 H</td></tr>
+            <tr><td>Aug 28, 2025</td><td class="status-ok">158</td><td class="status-ok">68</td><td class="status-ok">72</td><td class="status-ok">88</td><td class="status-ok">90</td><td class="status-ok">18</td></tr>
+            <tr><td>Apr 18, 2025</td><td class="status-ok">175</td><td class="status-ok">42</td><td class="status-warn">113 H</td><td class="status-ok">98</td><td>133</td><td>—</td></tr>
+            <tr><td>Nov 6, 2024</td><td class="status-ok">175</td><td class="status-warn">38 L</td><td class="status-warn">111 H</td><td class="status-ok">128</td><td>137</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert-box danger" style="margin-top:14px; margin-bottom:0">
+        <div class="alert-title" style="font-size:13px">🔴 Triglyceride Spike — October 2025: 214 mg/dL (High)</div>
+        <div class="alert-body">Triglycerides jumped from 88 mg/dL (Aug 2025) to 214 mg/dL (Oct 2025) — a 143% increase in two months. VLDL followed to 43 mg/dL (normal ≤30). This spike is clinically significant: elevated triglycerides combined with your cardiac history and pre-diabetic glucose pattern substantially increases cardiovascular risk. Likely contributors include dietary refined carbohydrates/sugar, prednisone (corticosteroids reliably raise triglycerides), and possibly alcohol or acute metabolic stress. The good news: LDL has finally hit its target (63 mg/dL, well under &lt;70 mg/dL for cardiac stent patients), and HDL has improved significantly from 38 (Low) in Nov 2024 to 60 in Oct 2025. Triglycerides need a recheck ASAP — this data point is from Oct 2025 and may have evolved.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRENDS TAB -->
+  <div id="tab-trends" class="section">
+    <div class="section-title">Trends Over Time</div>
+    <div class="section-subtitle">Visual trends with clinical context — what was happening in your life when the numbers moved.</div>
+
+    <!-- Clinical Timeline -->
+    <div class="card" style="margin-bottom:24px">
+      <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleDetail('clinical-timeline')">
+        <h3 style="margin:0;">Clinical Event Timeline — What Was Happening When</h3>
+        <span id="clinical-timeline-arrow" style="font-size:13px; color:var(--accent); user-select:none;">▶ Show</span>
+      </div>
+      <div id="clinical-timeline" style="display:none;">
+      <div style="position:relative; padding-left:24px; margin-top:16px;">
+        <div style="position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--border); border-radius:2px;"></div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--muted);"></div>
+          <div style="font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Oct 2024</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Baseline blood work</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">ALK Phos elevated at 157 U/L (since normalized). LDL high at 111. HDL borderline low at 38. Triglycerides 128. Liver enzymes (ALT/AST) still normal.</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--red);"></div>
+          <div style="font-size:11px; color:var(--red); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">April 2025 — Onset</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Sudden left leg pain + significant knee swelling</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">No prior injury. Initially appeared orthopaedic but turned out to be an immune/inflammatory reaction. Two Medrol dose packs (methylprednisolone, 6-day tapers) used April–June. Diagnosis still unresolved — rheumatologist initially suggested polymyalgia rheumatica, now reconsidering. All autoimmune panels negative (to be uploaded).</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--orange);"></div>
+          <div style="font-size:11px; color:var(--orange); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">July 2025 — Labs Shift</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Prednisone 20mg started · ALT begins climbing</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">Prednisone 20mg/day prescribed to control ongoing inflammation — very effective for pain. ALT jumps from normal (29 in Oct 2024) to 59 U/L by July 2025. eAG peaks at 131 mg/dL — prednisone-driven glucose elevation. This is the likely inflection point for liver enzyme rise: combination of atorvastatin + diltiazem (CYP3A4 interaction) + buprenorphine + now prednisone all stressing hepatic pathways simultaneously.</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--orange);"></div>
+          <div style="font-size:11px; color:var(--orange); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Aug–Oct 2025</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">First taper attempt · Inflammation markers peak then normalize</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">ESR peaks at 20 mm/HR (Aug), CRP at 1.7 mg/L (Sep) — then both normalize rapidly, suggesting the inflammation was being actively managed. ALT continues climbing to 85–130 range. Triglycerides spike to 214 mg/dL in October (prednisone effect on lipid metabolism). HDL improves dramatically to 60–68. LDL finally hits target at 63–72 mg/dL.</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--red);"></div>
+          <div style="font-size:11px; color:var(--red); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Oct–Dec 2025 — Crisis</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Taper too fast → adrenal insufficiency symptoms</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">Tapered down to 3mg too quickly. Severe brain fog, intense fear and anxiety — textbook adrenal insufficiency from HPA axis suppression. Ketamine therapy attempted during this period but failed — the destabilized neuroendocrine system likely prevented the plasticity window from holding. ALT peaked at 130 U/L (Jan 2, 2026 draw, reflecting Dec–Jan stress).</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--yellow);"></div>
+          <div style="font-size:11px; color:var(--yellow); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Dec 25, 2025 — Reset</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Back up to 8mg · Pain returns · Stabilize at 10mg · Now 8.5mg</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">Returned to 8mg on Christmas Day — symptoms resolved immediately, confirming adrenal etiology. Left leg pain returned briefly, requiring temporary increase to 10mg. Now stable at 8.5mg with a plan to taper 0.5mg every 4 weeks. Next reduction: 8mg on March 17, 2026. Estimated zero-prednisone date: late 2026.</div>
+        </div>
+
+        <div style="margin-bottom:20px; position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--green);"></div>
+          <div style="font-size:11px; color:var(--green); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Jan–Feb 2026 — Stabilizing</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Inflammation excellent · ALT partially improving · Vitamin D normalized</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">CRP at 0.5, ESR &lt;1 — near perfect. Vitamin D up to 45.3 from 23.1. ALT still elevated at 85–87 but off its January peak of 130. The trend is the right direction. Glucose still pre-diabetic at 107 but should improve as prednisone continues tapering.</div>
+        </div>
+
+        <div style="position:relative;">
+          <div style="position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--accent); border:2px solid white;"></div>
+          <div style="font-size:11px; color:var(--accent); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">March 2026 — Now</div>
+          <div style="font-size:13px; font-weight:600; margin-top:2px;">Ketamine booster infusion scheduled · Slow taper continuing</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; line-height:1.6;">Single IV ketamine booster this week to test re-engagement of antidepressant response — now on a stable physiological base (unlike late 2025). Prednisone at 8.5mg, dropping to 8mg March 17. Liver workup still needed. Triglyceride recheck needed. Autoimmune panels pending upload.</div>
+        </div>
+      </div>
+      </div><!-- /clinical-timeline collapsible -->
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3>Liver Enzymes — ALT &amp; AST</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartLiver"></canvas>
+        </div>
+        <div class="data-note">Red zone: ALT &gt;44 U/L, AST &gt;34 U/L. Peak ALT was 130 U/L in January 2026.</div>
+      </div>
+      <div class="card">
+        <h3>Inflammation — CRP &amp; ESR</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartInflam"></canvas>
+        </div>
+        <div class="data-note">Both markers have normalized dramatically since mid-2025. Excellent trajectory.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3>Fasting Glucose Trend</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartGlucose"></canvas>
+        </div>
+        <div class="data-note">Consistently pre-diabetic (100–125 mg/dL). One value (Jan 2026: 98) just below threshold — possibly non-fasting draw.</div>
+      </div>
+      <div class="card">
+        <h3>Vitamin D — Response to Supplementation</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartVitD"></canvas>
+        </div>
+        <div class="data-note">D3 5000 IU + K2 supplementation showing clear effect. Target optimal: 50–70 ng/mL.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3>eGFR — Kidney Filtration Rate</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartGFR"></canvas>
+        </div>
+        <div class="data-note">For age 57–59: target ≥60 mL/min. Current 74 is technically adequate but showing slight downward pressure from Jan 2026 (73) to Feb 2026 (74). Monitor quarterly.</div>
+      </div>
+      <div class="card">
+        <h3>Full Lipid Panel — LDL, HDL, Triglycerides, Total</h3>
+        <div class="chart-container-lg">
+          <canvas id="chartCholesterol"></canvas>
+        </div>
+        <div class="data-note">LDL has hit target (&lt;70 mg/dL) by Aug 2025 — atorvastatin is working. HDL improved dramatically (38→60). Triglycerides spiked to 214 mg/dL in Oct 2025 — likely prednisone + dietary. Needs recheck.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Estimated Average Glucose (eAG) — Correlated to HbA1c</h3>
+      <div class="chart-container">
+        <canvas id="charteAG"></canvas>
+      </div>
+      <p style="font-size:12px; color:var(--muted); margin-top:10px">eAG 100 mg/dL ≈ HbA1c 5.1% (normal). eAG 115 ≈ HbA1c 5.6% (pre-diabetic). eAG 126 ≈ HbA1c 6.0% (diabetic boundary). Your July 2025 value of 131 mg/dL indicates HbA1c was briefly in diabetic range.</p>
+    </div>
+  </div>
+
+  <!-- MEDICATIONS TAB -->
+  <div id="tab-medications" class="section">
+    <div class="section-title">Medication &amp; Supplement Guide</div>
+    <div class="section-subtitle">Science-based guidance on timing, food interactions, and clinical considerations based on your lab results.</div>
+
+    <div class="alert-box danger" style="margin-bottom:24px">
+      <div class="alert-title"><span class="icon">⚕</span> Important Disclaimer</div>
+      <div class="alert-body">This information is for educational awareness only. Do not change any medication timing or dosing without consulting your prescribing physicians. Your cardiac medications in particular (Eliquis, metoprolol, diltiazem, Valsartan) require careful clinical oversight.</div>
+    </div>
+
+    <!-- VISUAL TIMING MATRIX -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Visual Medication Timing</h3>
+      <div style="overflow-x: auto;">
+        <table class="timing-matrix">
+          <thead>
+            <tr>
+              <th>Medication</th>
+              <th>Before Breakfast</th>
+              <th>Morning 7–9am</th>
+              <th>Midday/PRN</th>
+              <th>Evening</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="med-name">Suboxone 4mg</td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Prednisone 8.5mg</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Metoprolol 50mg ER</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Diltiazem 120mg ER</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Valsartan 100mg</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Aspirin 81mg</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Eliquis 5mg</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+            </tr>
+            <tr>
+              <td class="med-name">Multi-vitamin</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-supp">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">K2 100mcg + D3 5000IU</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-supp">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Ubiquinol/CoQ10</td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-supp">●</span></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Zetia 10mg</td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Adderall 2.5mg (PRN)</td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-prn">●</span></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Xanax 1–1.5mg (PRN)</td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-prn">●</span></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Ketamine IV (clinic)</td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-prn">●</span></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="med-name">Atorvastatin 40mg</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-rx">●</span></td>
+            </tr>
+            <tr>
+              <td class="med-name">Magnesium</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;"><span class="pill-badge pill-supp">●</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 12px;">
+        <strong style="color: var(--text);">Legend:</strong> <span class="pill-badge pill-rx">●</span> Rx medication &nbsp; <span class="pill-badge pill-supp">●</span> Supplement &nbsp; <span class="pill-badge pill-prn">●</span> PRN/As needed
+      </div>
+    </div>
+
+    <!-- CYP3A4 INTERACTION WARNING -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Key Drug Interaction</h3>
+      <div class="interaction-grid">
+        <div class="interaction-box" style="background: var(--surface); border-left: 3px solid var(--accent);">
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Inhibitor</div>
+          <div style="font-size: 13px;">Diltiazem</div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">CYP3A4 inhibitor</div>
+        </div>
+        <div class="interaction-arrow">↓</div>
+        <div class="interaction-box" style="background: var(--surface); border-right: 3px solid var(--orange);">
+          <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Substrates Affected</div>
+          <div style="font-size: 12px; color: var(--orange);">↑ Atorvastatin<br>↑ Xanax<br>↑ Buprenorphine</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px; color:var(--accent)">❤️ Cardiac Medications</h3>
+
+        <div class="med-card">
+          <div class="med-name">Atorvastatin (Lipitor)</div>
+          <div class="med-dose">40mg · Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-evening">🌙 Evening preferred</span>
+            <span class="tag tag-food">With or without food</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(0)">Show notes ▼</button>
+          <div id="med-notes-0" class="med-note-detail">
+            Statins work best taken in the evening because cholesterol synthesis peaks at night. The evidence for atorvastatin is less dramatic than simvastatin (it has a 14-hour half-life vs. 2 hours), but evening dosing remains the standard recommendation. <strong style="color:var(--orange);">Your ALT is 87 U/L — atorvastatin is hepatotoxic and may be contributing.</strong> Discuss with your doctor. The fact that ALT started rising around July 2025 and has stayed elevated warrants a statin holiday trial under medical supervision.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Eliquis (Apixaban)</div>
+          <div class="med-dose">5mg · Twice daily</div>
+          <div class="med-timing">
+            <span class="tag tag-anytime">AM + PM (12hrs apart)</span>
+            <span class="tag tag-food">With or without food</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(1)">Show notes ▼</button>
+          <div id="med-notes-1" class="med-note-detail">
+            Take with meals to reduce the small risk of GI upset. Space doses 12 hours apart — critical for consistent anticoagulation with AFib. Do not skip doses. Given you're also on aspirin 81mg, bleeding risk is increased — watch for unusual bruising, blood in urine/stool. Your platelets at 161 K/UL (low-normal) with this dual antiplatelet/anticoagulant regimen is worth flagging with your cardiologist.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Aspirin EC</div>
+          <div class="med-dose">81mg · Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning preferred</span>
+            <span class="tag tag-food">With food (enteric-coated)</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(2)">Show notes ▼</button>
+          <div id="med-notes-2" class="med-note-detail">
+            Enteric-coated aspirin should be taken with food and not crushed. Morning dosing aligns with peak platelet activity. There is ongoing debate about whether low-dose aspirin adds meaningful benefit in secondary prevention when already on Eliquis — discuss this with your cardiologist, particularly given bleeding risk and your elevated liver enzymes.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Zetia (Ezetimibe)</div>
+          <div class="med-dose">10mg · Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-anytime">Any time of day</span>
+            <span class="tag tag-food">With or without food</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(3)">Show notes ▼</button>
+          <div id="med-notes-3" class="med-note-detail">
+            Ezetimibe blocks cholesterol absorption in the small intestine — timing flexibility is genuine. Can be taken any time. Minimal hepatic metabolism, so it's a better-tolerated lipid agent for you than the statin alone. No strong liver enzyme signal from ezetimibe alone.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Valsartan (ARB)</div>
+          <div class="med-dose">100mg · Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning</span>
+            <span class="tag tag-food">With or without food</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(4)">Show notes ▼</button>
+          <div id="med-notes-4" class="med-note-detail">
+            Blood pressure ARB. Can lower potassium, though your potassium (4.1 mmol/L) is in good shape. Avoid NSAIDs (including ibuprofen) — they blunt ARB efficacy and affect kidneys. Your eGFR of 74 warrants monitoring; ARBs are actually protective for kidneys at appropriate doses but require oversight.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Diltiazem ER</div>
+          <div class="med-dose">120mg · Daily (extended release)</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning</span>
+            <span class="tag tag-food">With or without food — do NOT crush</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(5)">Show notes ▼</button>
+          <div id="med-notes-5" class="med-note-detail">
+            Calcium channel blocker for rate control (AFib) and blood pressure. ER formulation: swallow whole, never crush or chew. Grapefruit juice significantly increases diltiazem levels — avoid. Interacts with statins (can raise statin levels — potential contribution to your elevated ALT). Discuss this interaction with your doctor.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Metoprolol Succinate ER</div>
+          <div class="med-dose">50mg · Daily (extended release)</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning</span>
+            <span class="tag tag-food">With food (increases absorption ~40%)</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(6)">Show notes ▼</button>
+          <div id="med-notes-6" class="med-note-detail">
+            Beta-blocker for heart rate/blood pressure. Take consistently with breakfast — food significantly improves bioavailability. ER formulation: do not crush or split. Can mask hypoglycemic symptoms — relevant given your borderline glucose. Can cause fatigue and exercise intolerance at higher doses; 50mg is moderate. Do not abruptly stop — taper under medical supervision.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px; color:var(--accent)">🧠 Psychiatric / CNS Medications</h3>
+
+        <div class="med-card">
+          <div class="med-name">Prednisone (very slow taper)</div>
+          <div class="med-dose">8.5mg current · → 8mg (Mar 17) · then −0.5mg every 4 weeks</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning ONLY (7–9 AM)</span>
+            <span class="tag tag-food">With food — always</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(7)">Show notes ▼</button>
+          <div id="med-notes-7" class="med-note-detail">
+            <strong style="color:var(--yellow);">Take in the morning — this is non-negotiable.</strong> Prednisone mimics cortisol, which naturally peaks in the morning. Morning dosing suppresses the adrenal axis less severely and reduces insomnia. Your history is instructive: tapering too fast in Oct–Dec 2025 caused severe brain fog, intense fear, and anxiety — classic adrenal insufficiency symptoms that resolved immediately when you went back up to 8mg on Christmas Day. The 0.5mg/4-week pace is the right call. At this rate, zero prednisone is approximately 9–10 months away (late 2026). Expect adrenal recovery to take months beyond that. Your glucose will improve as the dose drops — prednisone spikes blood sugar 4–6 hours after dosing. Ketamine efficacy may also improve as the dose gets lower, supporting the theory that an unstable HPA axis (not a direct drug block) was interfering with treatment response.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Suboxone (Buprenorphine/Naloxone)</div>
+          <div class="med-dose">4mg · Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning sublingual</span>
+            <span class="tag tag-empty">Empty mouth — nothing 15 min before</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(8)">Show notes ▼</button>
+          <div id="med-notes-8" class="med-note-detail">
+            Sublingual absorption requires dry mouth — no food or drink 15 minutes before. Place under tongue and let dissolve fully (don't swallow). <strong style="color:var(--orange);">Note: Buprenorphine is metabolized by the liver (CYP3A4) and CAN elevate liver enzymes.</strong> Given your persistently elevated ALT, Suboxone should be flagged to your prescribing physician as a potential contributor alongside atorvastatin and diltiazem. A hepatology consult is warranted.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Xanax (Alprazolam)</div>
+          <div class="med-dose">1–1.5mg · PRN (as needed)</div>
+          <div class="med-timing">
+            <span class="tag tag-prn">PRN · As needed</span>
+            <span class="tag tag-food">Food optional</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(9)">Show notes ▼</button>
+          <div id="med-notes-9" class="med-note-detail">
+            PRN benzodiazepine — use sparingly given your history of addiction and 20-year sobriety. Metabolized by CYP3A4 in the liver, similar pathway to buprenorphine. With ALT elevated, benzodiazepine metabolism may be slightly impaired — effects could be stronger/longer. Avoid alcohol entirely (no-brainer, but worth stating). Avoid combining with other CNS depressants. If anxiety is frequent, discuss non-benzo alternatives with your psychiatrist.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Ketamine — IV Infusion Therapy</div>
+          <div class="med-dose">Intermittent IV infusions · Monitored clinic setting · Booster scheduled March 2026</div>
+          <div class="med-timing">
+            <span class="tag tag-prn">Periodic / As needed</span>
+            <span class="tag tag-caution">Clinic-supervised only</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(10)">Show notes ▼</button>
+          <div id="med-notes-10" class="med-note-detail">
+            <strong style="color:var(--green);">Treatment-resistant depression (TRD) — proven effective over 5 years.</strong> IV ketamine at a dedicated clinic with monitoring is the appropriate protocol for your history. The 2025 failure is worth understanding clearly: the current working hypothesis is not that prednisone directly blocks ketamine's NMDA/glutamate mechanism, but that rapid prednisone withdrawal created HPA axis instability — a neurobiologically turbulent baseline that prevented the plasticity window ketamine opens from "sticking." A stable system is required for lasting effect. With the taper now slow and deliberate, the March 2026 booster infusion has a meaningfully better chance. <strong style="color:var(--yellow);">Key note:</strong> Avoid Xanax for at least 24–48 hours before an infusion — benzodiazepines directly blunt ketamine's antidepressant mechanism by acting on overlapping inhibitory pathways. Discuss timing with your ketamine clinic.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Adderall (Amphetamine)</div>
+          <div class="med-dose">2.5mg · PRN (max 3x/week)</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning/early afternoon</span>
+            <span class="tag tag-food">After breakfast preferred</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(11)">Show notes ▼</button>
+          <div id="med-notes-11" class="med-note-detail">
+            Low dose, infrequent use. Morning/early-afternoon only — even 2.5mg can disrupt sleep if taken late. With cardiac stent, ARB, beta-blocker and diltiazem all managing heart rate/pressure, amphetamine use (even at low dose) warrants cardiology awareness. Stimulants can raise heart rate and blood pressure acutely. Not contraindicated at this dose under cardiac supervision, but your cardiologist should know you're using it.
+          </div>
+        </div>
+
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px; margin-top:24px; color:var(--accent)">💊 Supplements</h3>
+
+        <div class="med-card">
+          <div class="med-name">Ubiquinol (CoQ10)</div>
+          <div class="med-dose">Dose varies — check your bottle</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning or midday</span>
+            <span class="tag tag-food">With fatty meal — increases absorption significantly</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(12)">Show notes ▼</button>
+          <div id="med-notes-12" class="med-note-detail">
+            <strong style="color:var(--green);">Excellent choice given atorvastatin use.</strong> Statins deplete CoQ10 by blocking the same pathway (mevalonate) used to synthesize both cholesterol and CoQ10. Ubiquinol is the reduced, more bioavailable form — good choice over standard CoQ10. 200–400mg/day is typically the therapeutic range for statin users. Potentially cardioprotective. Take with the fattiest meal of the day.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">K2 (100mcg) + D3 (5000 IU)</div>
+          <div class="med-dose">Daily · Combined or separate</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning or midday</span>
+            <span class="tag tag-food">With fatty meal — fat-soluble vitamins</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(13)">Show notes ▼</button>
+          <div id="med-notes-13" class="med-note-detail">
+            <strong style="color:var(--green);">K2+D3 combination is evidence-informed.</strong> Vitamin K2 (MK-7 form) directs calcium deposited by D3 into bones rather than arterial walls — critical for someone with arteriosclerosis. D3 5000 IU is appropriate given your history of deficiency (your levels have responded well). Take with a fat-containing meal — both are fat-soluble. Your Feb 2026 level of 45.3 ng/mL is good; ideal range for cardiovascular health is closer to 50–70 ng/mL.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Magnesium</div>
+          <div class="med-dose">Form/dose varies — check bottle</div>
+          <div class="med-timing">
+            <span class="tag tag-evening">🌙 Evening preferred</span>
+            <span class="tag tag-food">With food if Mg oxide/citrate (GI tolerance)</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(14)">Show notes ▼</button>
+          <div id="med-notes-14" class="med-note-detail">
+            <strong style="color:var(--green);">Well-indicated for you.</strong> Magnesium deficiency is common with diuretic use and is associated with AFib, hypertension, and insulin resistance — all relevant to your profile. Preferred forms: magnesium glycinate (best sleep/absorption) or magnesium malate (energy). Avoid magnesium oxide (poor absorption, laxative effect). Evening timing supports sleep quality. Dose typically 200–400mg elemental magnesium. Check your form — make sure it's glycinate or malate, not oxide.
+          </div>
+        </div>
+
+        <div class="med-card">
+          <div class="med-name">Multi-vitamin</div>
+          <div class="med-dose">Daily</div>
+          <div class="med-timing">
+            <span class="tag tag-morning">☀️ Morning</span>
+            <span class="tag tag-food">With breakfast</span>
+          </div>
+          <button class="toggle-notes-btn" onclick="toggleMedNotes(15)">Show notes ▼</button>
+          <div id="med-notes-15" class="med-note-detail">
+            Take with breakfast. Check that your multi doesn't contain high-dose B3 (niacin) — niacin can elevate liver enzymes and is a concern given your ALT. Also check that the iron content is minimal or zero — adult men typically don't need supplemental iron and high iron is pro-inflammatory. With your D3 5000 IU and K2 as separate supplements, you don't need a multi with those — check for double-dosing vitamin D.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:16px">⚠️ Additional Drug Interactions to Discuss With Your Doctors</h3>
+    <div class="grid-2">
+      <div class="alert-box danger">
+        <div class="alert-title">Eliquis + Aspirin = Elevated Bleeding Risk</div>
+        <div class="alert-body">Dual therapy (anticoagulant + antiplatelet) significantly increases bleeding risk. Your platelets at 161 K/UL (low-normal) compound this. The combination is sometimes clinically indicated post-stent, but the calculus changes over time. If you're more than 1 year post-stent, discuss with your cardiologist whether aspirin is still necessary.</div>
+      </div>
+      <div class="alert-box">
+        <div class="alert-title">Suboxone + Xanax = CNS Depression Risk</div>
+        <div class="alert-body">Both are CNS depressants. The FDA has issued black-box warnings about combining buprenorphine with benzodiazepines. At your doses (4mg Suboxone, 1-1.5mg Xanax PRN), the risk is present but managed with careful use. Your prescribers should be in communication and aware of this combination.</div>
+      </div>
+      <div class="alert-box">
+        <div class="alert-title">Prednisone + Blood Pressure Meds = Fluid Retention</div>
+        <div class="alert-body">Prednisone causes sodium and water retention, which directly counteracts Valsartan and Metoprolol's blood pressure control. As you taper off prednisone, your blood pressure medications may need adjustment — don't assume BP remains stable through the taper without monitoring.</div>
+      </div>
+      <div class="alert-box info">
+        <div class="alert-title">Grapefruit — Avoid Entirely</div>
+        <div class="alert-body">Grapefruit and grapefruit juice inhibit CYP3A4 enzymes — the same pathway that metabolizes diltiazem, atorvastatin, and alprazolam (Xanax). Even one glass can raise blood levels of these drugs unpredictably.</div>
+      </div>
+    </div>
+  </div>
+  <div id="tab-missing" class="section">
+    <div class="section-title">Missing &amp; Recommended Tests</div>
+    <div class="section-subtitle">Tests not yet in your records that the science strongly supports, given your profile, medications, and existing results.</div>
+
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; color:var(--red)">🔴 Urgent — Order Now</h3>
+
+    <div class="test-needed">
+      <span class="test-priority tp-urgent">Urgent</span>
+      <div>
+        <div class="test-name">hs-CRP (High-Sensitivity CRP)</div>
+        <div class="test-why">You have regular CRP but not high-sensitivity CRP. For cardiovascular risk stratification with a cardiac stent and arteriosclerosis, hs-CRP &lt;1.0 mg/L is the target. Regular CRP only catches acute inflammation; hs-CRP catches chronic low-grade vascular inflammation. Given your cardiac history, this distinction matters for treatment decisions (e.g., whether to escalate statin therapy).</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-urgent">Urgent</span>
+      <div>
+        <div class="test-name">Triglyceride Recheck + Full Lipid Panel (current — post Oct 2025)</div>
+        <div class="test-why">Your most recent lipid data is from October 2025. Triglycerides spiked to 214 mg/dL and VLDL to 43 mg/dL at that draw — both significantly above normal. You need a current lipid panel (ideally fasting) to determine whether these values have normalized or persisted. If triglycerides remain &gt;150 mg/dL, pharmacological intervention (fibrates, omega-3 prescription) may be warranted alongside dietary change. Also consider requesting ApoB — a superior cardiovascular risk marker to LDL-C.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-urgent">Urgent</span>
+      <div>
+        <div class="test-name">HbA1c (Numeric value needed)</div>
+        <div class="test-why">Your eAG data strongly suggests HbA1c in the 5.5–5.8% range, and graphs show 5 HbA1c tests, but no numeric values were captured. You need the actual number to determine if you're in pre-diabetic territory (5.7–6.4%) or normal (&lt;5.7%). With chronic prednisone use, glucose elevations, cardiac disease, and statin use, this number matters for intervention decisions. July 2025 eAG of 131 mg/dL suggests HbA1c was briefly at 6.0%+ at that time.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-urgent">Urgent</span>
+      <div>
+        <div class="test-name">GGT (Gamma-Glutamyl Transferase)</div>
+        <div class="test-why">Your ALT has been persistently elevated for at least 8 months (Jul 2025 to Feb 2026). GGT is critical for differential diagnosis — it's elevated by alcohol, fatty liver, bile duct issues, and some medications, and is less elevated by muscle damage. Given your medications (atorvastatin, buprenorphine, diltiazem), you need GGT to determine whether liver stress is hepatocellular or biliary. Also: GGT is an independent cardiovascular risk marker.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-urgent">Urgent</span>
+      <div>
+        <div class="test-name">Hepatitis B Surface Antigen &amp; Hepatitis C Antibody</div>
+        <div class="test-why">Persistent ALT elevation must rule out viral hepatitis. Even with recovery history, Hepatitis C is common in people with past substance use history and can remain dormant for decades. Hep C is curable with direct-acting antivirals. If not tested recently, this should be done now. Hep B status also affects whether prednisone and immunosuppressives can be used safely long-term.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; margin-top:24px; color:var(--orange)">🟠 Important — Order at Next Visit</h3>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">ApoB (Apolipoprotein B)</div>
+        <div class="test-why">ApoB is a direct count of atherogenic particles (including small dense LDL which regular LDL-C misses). Multiple guidelines now recommend ApoB over LDL-C for high-CV-risk patients. With your cardiac stent and arteriosclerosis, ApoB &lt;65 mg/dL is the target. This one test could change your statin dose or medication strategy.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">Lipoprotein(a) — Lp(a)</div>
+        <div class="test-why">Lp(a) is a genetically determined, largely statin-resistant cardiovascular risk factor. About 20% of the population has elevated Lp(a). If elevated, it explains premature atherosclerosis even with controlled LDL and informs treatment choices. Only needs to be tested once in a lifetime. Given your cardiac history, this is high-value information.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">Fasting Insulin &amp; HOMA-IR</div>
+        <div class="test-why">Your fasting glucose is consistently elevated (pre-diabetic range). But fasting glucose only tells you blood sugar — it doesn't tell you if you're insulin resistant. Fasting insulin + glucose allows calculation of HOMA-IR (insulin resistance index). This is foundational for the Casey Means / metabolic health approach you follow. If HOMA-IR &gt;2.0, you're insulin resistant even if HbA1c is "normal." Target HOMA-IR: &lt;1.0.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">Uric Acid</div>
+        <div class="test-why">Elevated uric acid is associated with hypertension, cardiovascular disease, insulin resistance, and kidney disease — all relevant to you. Diuretic effects from some of your cardiac meds can raise uric acid. Also connected to fructose metabolism (dietary signal). Not in any of your current panels.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">TSH (Thyroid Stimulating Hormone)</div>
+        <div class="test-why">Not present in any of your labs. Thyroid dysfunction is common and can masquerade as depression, fatigue, weight difficulty, and cardiac rhythm issues (hypothyroidism can worsen AFib). Given your complex psychiatric and cardiac history, baseline thyroid function is essential. At minimum: TSH. If abnormal, add Free T4.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">Complete Iron Panel (Serum Iron, TIBC, Ferritin, Transferrin Saturation)</div>
+        <div class="test-why">Your hemoglobin (14.2 g/dL) and RBC counts are normal, but iron panel isn't in your records. Ferritin is an important inflammation marker (beyond iron status) and cardiac risk factor when elevated. With your history, medications, and dietary changes, knowing ferritin baseline is useful. Low ferritin causes fatigue even with normal hemoglobin.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-important">Important</span>
+      <div>
+        <div class="test-name">Homocysteine</div>
+        <div class="test-why">Homocysteine is an independent risk factor for cardiovascular disease, stroke, and cognitive decline — and is often elevated with B12 or folate deficiency. It's treated with methylated B vitamins. Given your cardiac history and complex medication load, baseline homocysteine gives actionable data. Target: &lt;10 μmol/L.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; margin-top:24px; color:var(--accent)">🔵 Routine — Consider Annually</h3>
+
+    <div class="test-needed">
+      <span class="test-priority tp-routine">Routine</span>
+      <div>
+        <div class="test-name">Magnesium (Serum &amp; RBC Magnesium)</div>
+        <div class="test-why">You're supplementing magnesium — good — but serum magnesium only reflects ~1% of body magnesium. RBC magnesium is a better measure of actual intracellular status. Magnesium deficiency is extremely common with cardiac disease and contributes to AFib, hypertension, and muscle cramping. Confirm your supplementation is actually raising your levels.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-routine">Routine</span>
+      <div>
+        <div class="test-name">Testosterone (Total &amp; Free)</div>
+        <div class="test-why">Age 57, recovered addict, history of depression, weight challenges, cardiac disease — testosterone status is relevant. Low testosterone correlates with metabolic syndrome, insulin resistance, cardiovascular risk, and depression. Beta-blockers (metoprolol) can reduce testosterone. Not about performance — it's a metabolic health marker at this age.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-routine">Routine</span>
+      <div>
+        <div class="test-name">DEXA Scan (Bone Density)</div>
+        <div class="test-why">Prednisone is one of the leading causes of steroid-induced osteoporosis. Even short courses can reduce bone density. With a cardiac stent (fall/bleeding risk) and prednisone use, bone density screening via DEXA is medically indicated. Baseline now, repeat in 1–2 years. Vitamin D and K2 supplementation is appropriate — confirm it's working via DEXA.</div>
+      </div>
+    </div>
+
+    <div class="test-needed">
+      <span class="test-priority tp-routine">Routine</span>
+      <div>
+        <div class="test-name">Continuous Glucose Monitor (CGM) — 2-week trial</div>
+        <div class="test-why">A CGM like Libre or Dexcom worn for 2 weeks would give you an unprecedented window into your metabolic response to food, sleep, stress, exercise, and your medications (especially prednisone). Given your borderline glucose, prednisone taper, and interest in Good Energy / Casey Means principles, this is one of the highest-ROI biometric experiments you could run. Often requires a prescription but frequently covered when pre-diabetic.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECOMMENDATIONS TAB -->
+  <div id="tab-recommendations" class="section">
+    <div class="section-title">Lifestyle &amp; Health Recommendations</div>
+    <div class="section-subtitle">Science-informed suggestions based on your labs, medications, and health profile. Prioritized by impact.</div>
+
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; color:var(--red)">🔴 Priority: Liver &amp; Metabolic</h3>
+
+        <div class="rec-item priority-critical">
+          <div class="rec-title">Pursue hepatology workup — don't wait</div>
+          <div class="rec-body">ALT at 87 U/L (almost 2x normal) for 8+ consecutive months is not something to watch and wait on. Multiple medications (atorvastatin + diltiazem = drug-drug interaction raising statin levels, buprenorphine, prednisone) are all hepatotoxic candidates. Add Hepatitis C screening, GGT, and liver ultrasound if not done. A hepatologist — not just your PCP — should weigh in on whether a statin holiday is appropriate.</div>
+        </div>
+
+        <div class="rec-item priority-critical">
+          <div class="rec-title">Glucose: treat this now, not later</div>
+          <div class="rec-body">Every single fasting glucose you've had is above 100 mg/dL. Pre-diabetes is reversible with lifestyle — but only if treated seriously. With arteriosclerosis, cardiac stent, and prednisone, hyperglycemia is compounding your cardiovascular risk in real time. The prednisone taper is the single biggest metabolic intervention you can make. As it decreases, your glucose should improve — but dietary intervention is needed to lock in the gains.</div>
+        </div>
+
+        <div class="rec-item priority-high">
+          <div class="rec-title">Dietary strategy: time-restricted eating + low-glycemic</div>
+          <div class="rec-body">The Casey Means / Good Energy framework you follow applies directly here. Target: eat within a 10-hour window (e.g., 9 AM–7 PM). Eliminate refined carbohydrates, white bread, pasta, rice, and added sugars entirely — these spike glucose and compound insulin resistance. Prioritize: fatty fish (salmon, sardines), leafy greens, cruciferous vegetables, nuts, olive oil, eggs, legumes. Aim for 30+ grams of fiber daily. A CGM for 2 weeks would show you exactly which foods are spiking your glucose.</div>
+        </div>
+
+        <div class="rec-item priority-high">
+          <div class="rec-title">Alcohol: absolute zero</div>
+          <div class="rec-body">You're already in recovery — stated as obvious, not preachy. But alcohol is hepatotoxic, and with ALT already elevated and medications being metabolized by the same liver pathways, even a single drink meaningfully compounds liver stress. Zero tolerance here is medically warranted, not just recovery-based.</div>
+        </div>
+
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; margin-top:24px; color:var(--orange)">🟠 Priority: Cardiovascular</h3>
+
+        <div class="rec-item priority-high">
+          <div class="rec-title">Exercise: zone 2 cardio is your cardiac medicine</div>
+          <div class="rec-body">You already exercise 2–5x/week — excellent. For your cardiac profile (stent, AFib, hypertension), Zone 2 cardio (conversational pace — 60–70% max HR) for 150–200 minutes per week is the most evidence-backed intervention. Zone 2 specifically improves mitochondrial function, insulin sensitivity, and reduces cardiac events in post-stent patients. Walking briskly, cycling, swimming — not sprint intervals. Max HR for you at 57: roughly 163 BPM; Zone 2 target: 100–115 BPM.</div>
+        </div>
+
+        <div class="rec-item priority-high">
+          <div class="rec-title">Get LDL and HDL numbers — today</div>
+          <div class="rec-body">Your atorvastatin 40mg dose should be achieving LDL &lt;70 mg/dL (the target for very high CV risk). You don't actually know if it's working because the numeric values are locked in graph images. Call your doctor's office and ask for a printed lipid panel with LDL, HDL, and triglycerides. If LDL isn't at target, dose escalation or addition of a PCSK9 inhibitor may be warranted.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Omega-3 fatty acids — consider adding</div>
+          <div class="rec-body">Fish oil (EPA+DHA, 2–4 grams/day) has strong evidence for triglyceride reduction and modest cardiac protection. Prescription Vascepa (icosapentaenoic acid only) reduced cardiovascular events by 25% in the REDUCE-IT trial in patients already on statins with high triglycerides. Given your cardiovascular profile, discuss with your cardiologist. Note: at high doses, omega-3 can potentiate Eliquis — clinical supervision matters here.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Stop smoking (you have) — now protect the gains</div>
+          <div class="rec-body">Nicotine pouches still deliver nicotine, which is vasoconstrictive and raises blood pressure — directly relevant to your hypertension, AFib, and coronary artery disease. The goal should be complete nicotine cessation. Varenicline (Chantix) or cytisine have good evidence. The difference between smoking and nicotine pouches is that you've eliminated most of the carcinogens — but the cardiovascular effects of nicotine itself persist.</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; color:var(--accent)">🔵 Priority: Sleep &amp; Recovery</h3>
+
+        <div class="rec-item">
+          <div class="rec-title">Sleep: prednisone is destroying it — mitigate aggressively</div>
+          <div class="rec-body">Prednisone causes insomnia, especially if taken at the wrong time (not morning). Morning dosing helps. Additional strategies: consistent wake time regardless of sleep quality (anchors circadian rhythm), no screens 1 hour before bed, blackout curtains, room temperature 65–68°F. Magnesium glycinate at night genuinely helps. As the prednisone taper progresses, sleep should improve — but adrenal recovery can take months after stopping corticosteroids.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Sleep apnea screening if not already done</div>
+          <div class="rec-body">AFib, hypertension, and excess weight are the three primary risk factors for obstructive sleep apnea. Sleep apnea dramatically worsens AFib and cardiovascular outcomes. If you haven't had a sleep study (or home sleep test), this is medically indicated. Treatment of sleep apnea reduces AFib burden and improves blood pressure. Home sleep test is simple and often covered.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Meditation is doing more than you think</div>
+          <div class="rec-body">Your daily meditation practice has measurable cardiac effects: reduced sympathetic nervous system activation, lower resting heart rate, reduced cortisol (which directly affects your glucose and immune function). Multiple studies show mindfulness meditation reduces AFib recurrence and improves HRV. Keep this non-negotiable. It's not self-care theater — it's genuinely cardioprotective at a mechanistic level.</div>
+        </div>
+
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; margin-top:24px; color:var(--green)">🟢 Positive Signals to Build On</h3>
+
+        <div class="rec-item priority-good">
+          <div class="rec-title">Inflammation: near-perfect — protect it</div>
+          <div class="rec-body">CRP at 0.5 mg/L and ESR &lt;1 mm/HR are exceptional. These markers track systemic inflammation, which drives cardiovascular disease, autoimmunity, and neurodegeneration. The foods that protect this: colorful vegetables, olive oil, turmeric, fatty fish, berries, and dark leafy greens. The foods that destroy it: sugar, refined carbohydrates, seed oils, and processed food. Your trajectory here is genuinely impressive.</div>
+        </div>
+
+        <div class="rec-item priority-good">
+          <div class="rec-title">Vitamin D: success — now optimize to 50–70 ng/mL</div>
+          <div class="rec-body">From 23.1 ng/mL (Sep 2025) to 45.3 ng/mL (Feb 2026) is a meaningful clinical improvement. Vitamin D at optimal levels (50–70 ng/mL) is associated with reduced cardiovascular events, improved immune function, better mood regulation, and lower cancer risk. You're close — consider increasing D3 to 6000–7000 IU/day briefly, or maintaining 5000 IU and testing again in 3 months.</div>
+        </div>
+
+        <div class="rec-item priority-good">
+          <div class="rec-title">Kidney function: stable, protect it</div>
+          <div class="rec-body">eGFR of 74 mL/min/1.73m² is technically adequate for age 57–59 (target ≥60), but trending slightly lower. Protect kidneys by: staying well-hydrated (aim 2–3L water/day), avoiding NSAIDs (ibuprofen, naproxen — these are nephrotoxic and also dangerous with ARBs), limiting protein intake to 0.8–1.0g/kg/day (not carnivore-level), and controlling blood pressure tightly. Monitor creatinine quarterly.</div>
+        </div>
+
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:14px; margin-top:24px; color:var(--muted)">💊 Supplement Additions to Consider</h3>
+
+        <div class="rec-item">
+          <div class="rec-title">Berberine (500mg, 2–3x daily with meals)</div>
+          <div class="rec-body">Berberine has strong clinical evidence for reducing fasting glucose, improving insulin sensitivity (comparable to low-dose metformin in some studies), and lowering LDL. Given your pre-diabetic glucose pattern and cardiovascular profile, berberine is one of the most evidence-supported supplements you could add. <strong>Note:</strong> it can interact with CYP3A4-metabolized drugs including diltiazem — start low and monitor liver enzymes, which are already elevated.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Psyllium husk (5–10g, before meals)</div>
+          <div class="rec-body">Soluble fiber blunts post-meal glucose spikes, reduces LDL cholesterol, and improves gut microbiome. Evidence is strong, cost is negligible, and it's safe with all your medications. Mix in water before meals — especially before carbohydrate-heavy meals. This is a high-ROI, zero-risk intervention for glucose and cholesterol.</div>
+        </div>
+
+        <div class="rec-item">
+          <div class="rec-title">Creatine monohydrate (3–5g/day)</div>
+          <div class="rec-body">Emerging evidence supports creatine for muscle preservation during prednisone therapy (corticosteroids cause muscle wasting), cognitive function, and exercise performance. Given your exercise habits and prednisone taper, creatine is a sensible addition. Safe with your medications. Take with water at any time — timing is not critical.</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="card">
+      <h3>Weight Target: 185 lbs from ~210 lbs — Strategy</h3>
+      <p style="font-size:13px; color:var(--muted); line-height:1.8; margin-bottom:14px">At 57, with cardiac stent, AFib, and prednisone use, the approach to 25 lbs of weight loss requires nuance. Here's what the science says works for your specific profile:</p>
+      <div class="grid-2">
+        <div>
+          <div class="rec-item">
+            <div class="rec-title">Do: Protein-forward, moderate caloric deficit</div>
+            <div class="rec-body">Target 1.2–1.5g protein per kg of body weight (~130–160g/day). This preserves muscle during weight loss — critical at 57 when muscle mass is already declining. Prednisone accelerates muscle wasting — protein + resistance training is the counter. A modest 300–500 calorie daily deficit is enough; don't crash diet with cardiac disease.</div>
+          </div>
+        </div>
+        <div>
+          <div class="rec-item">
+            <div class="rec-title">Do: Resistance training 2x/week minimum</div>
+            <div class="rec-body">Compound movements (squats, deadlifts, rows, presses) at moderate weight. Resistance training is independently protective against cardiovascular events, improves insulin sensitivity more than cardio alone, and preserves muscle during the caloric deficit. Cardiac-safe with clearance from your cardiologist.</div>
+          </div>
+        </div>
+        <div>
+          <div class="rec-item">
+            <div class="rec-title">Avoid: Extreme caloric restriction</div>
+            <div class="rec-body">Below 1800 calories/day with your medication load can cause dangerous electrolyte shifts (potassium/sodium imbalance with Valsartan), hypoglycemia risk (metoprolol masks symptoms), and electrolyte issues with diltiazem. Slow and steady wins here — 1–1.5 lbs/week max.</div>
+          </div>
+        </div>
+        <div>
+          <div class="rec-item">
+            <div class="rec-title">Realistic timeline: 4–6 months</div>
+            <div class="rec-body">25 lbs at 1 lb/week = 25 weeks (~6 months) with consistent effort. The prednisone taper will help — corticosteroids cause fluid retention and fat redistribution (especially truncal/abdominal). As you taper off, you may lose 5–8 lbs of water weight/inflammation relatively quickly. The metabolic work is the remaining 15–20 lbs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// Toggle collapsible sections
+function toggleDetail(id) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  const isHidden = element.style.display === 'none' || element.style.display === '';
+  element.style.display = isHidden ? 'block' : 'none';
+  // Update arrow label if one exists
+  const arrow = document.getElementById(id + '-arrow');
+  if (arrow) arrow.textContent = isHidden ? '▼ Hide' : '▶ Show';
+}
+
+// Toggle alert detail
+function toggleAlertDetail(alertIndex) {
+  const detail = document.getElementById('alert-detail-' + alertIndex);
+  if (detail) {
+    detail.classList.toggle('show');
+  }
+}
+
+// Toggle med notes
+function toggleMedNotes(medIndex) {
+  const detail = document.getElementById('med-notes-' + medIndex);
+  if (detail) {
+    detail.classList.toggle('show');
+    // Update button text
+    const btn = event.target;
+    btn.textContent = detail.classList.contains('show') ? 'Hide notes ▲' : 'Show notes ▼';
+  }
+}
+
+
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'trends') initCharts();
+}
+
+// Prednisone taper countdown table
+(function() {
+  const today = new Date('2026-03-01');
+  const startDose = 8.5;
+  const startDate = new Date('2026-03-01');
+  const intervalDays = 28; // 4 weeks
+  const stepMg = 0.5;
+  const steps = [];
+  let dose = startDose;
+  let date = new Date(startDate);
+  while (dose > 0) {
+    steps.push({ date: new Date(date), dose: dose });
+    dose = Math.round((dose - stepMg) * 10) / 10;
+    date = new Date(date.getTime() + intervalDays * 86400000);
+  }
+  steps.push({ date: new Date(date), dose: 0 });
+
+  const tbody = document.getElementById('taperTable');
+  if (!tbody) return;
+  steps.forEach((step, i) => {
+    const isPast = step.date < today;
+    const isCurrent = i === 0;
+    const isNext = i === 1;
+    const dateStr = step.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const doseStr = step.dose === 0 ? '<strong style="color:var(--green)">0mg — Zero!</strong>' : step.dose + 'mg';
+    let status = '';
+    let rowStyle = '';
+    if (isCurrent) { status = '<span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">Current</span>'; rowStyle = 'background:rgba(99,102,241,0.08);'; }
+    else if (isNext) { status = '<span style="background:var(--yellow);color:#000;padding:2px 8px;border-radius:4px;font-size:11px;">Next</span>'; rowStyle = ''; }
+    else if (isPast) { status = '<span style="color:var(--green);font-size:11px;">✓ Done</span>'; rowStyle = 'opacity:0.5;'; }
+    else { status = '<span style="color:var(--muted);font-size:11px;">Upcoming</span>'; }
+    const notes = step.dose === 0 ? 'Start adrenal recovery monitoring' : step.dose <= 3 ? 'HPA axis highly sensitive — watch symptoms daily' : step.dose <= 5 ? 'Physiologic threshold — taper extra cautiously' : step.dose === 8 ? 'First planned reduction from 8.5mg' : '';
+    tbody.innerHTML += '<tr style="' + rowStyle + '"><td>' + dateStr + '</td><td>' + doseStr + '</td><td>' + status + '</td><td style="color:var(--muted);font-size:12px;">' + notes + '</td></tr>';
+  });
+})();
+
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: { color: '#94a3b8', font: { size: 11 } }
+    },
+    tooltip: {
+      backgroundColor: '#1a1d2e',
+      borderColor: '#2e3252',
+      borderWidth: 1,
+      titleColor: '#e2e8f0',
+      bodyColor: '#94a3b8'
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#94a3b8', font: { size: 10 } },
+      grid: { color: '#1e2235' }
+    },
+    y: {
+      ticks: { color: '#94a3b8', font: { size: 10 } },
+      grid: { color: '#1e2235' }
+    }
+  }
+};
+
+let chartsInitialized = false;
+
+function initCharts() {
+  if (chartsInitialized) return;
+  chartsInitialized = true;
+
+  // Liver enzymes
+  new Chart(document.getElementById('chartLiver'), {
+    type: 'line',
+    data: {
+      labels: ['Oct 2024', 'Jul 2025', 'Sep 2025', 'Oct 2025', 'Jan 2, 2026', 'Jan 20, 2026', 'Feb 2026'],
+      datasets: [
+        {
+          label: 'ALT (U/L)',
+          data: [29, 59, 44, 85, 130, 85, 87],
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248,113,113,0.1)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5
+        },
+        {
+          label: 'AST (U/L)',
+          data: [15, 15, 23, 28, 38, 32, 39],
+          borderColor: '#fb923c',
+          backgroundColor: 'rgba(251,146,60,0.08)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5
+        }
+      ]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        annotation: {}
+      },
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 0,
+          suggestedMax: 140
+        }
+      }
+    }
+  });
+
+  // Inflammation
+  new Chart(document.getElementById('chartInflam'), {
+    type: 'line',
+    data: {
+      labels: ['Aug 2025', 'Sep 2025', 'Nov 2025', 'Jan 2026', 'Feb 2026'],
+      datasets: [
+        {
+          label: 'CRP (mg/L)',
+          data: [1.4, 1.7, 0.6, 0.6, 0.5],
+          borderColor: '#6c8ebf',
+          backgroundColor: 'rgba(108,142,191,0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          yAxisID: 'y'
+        },
+        {
+          label: 'ESR (mm/HR)',
+          data: [20, 12, 1, 1, 1],
+          borderColor: '#4ade80',
+          backgroundColor: 'rgba(74,222,128,0.08)',
+          tension: 0.4,
+          fill: false,
+          pointRadius: 5,
+          yAxisID: 'y2'
+        }
+      ]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          position: 'left',
+          title: { display: true, text: 'CRP (mg/L)', color: '#94a3b8', font: { size: 10 } },
+          suggestedMin: 0,
+          suggestedMax: 6
+        },
+        y2: {
+          ...CHART_DEFAULTS.scales.y,
+          position: 'right',
+          title: { display: true, text: 'ESR (mm/HR)', color: '#94a3b8', font: { size: 10 } },
+          suggestedMin: 0,
+          suggestedMax: 25,
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+
+  // Glucose
+  new Chart(document.getElementById('chartGlucose'), {
+    type: 'line',
+    data: {
+      labels: ['Oct 2024', 'Jul 2025', 'Sep 2025', 'Oct 2025', 'Jan 2026', 'Feb 2026'],
+      datasets: [{
+        label: 'Fasting Glucose (mg/dL)',
+        data: [105, 101, 114, 108, 98, 107],
+        borderColor: '#facc15',
+        backgroundColor: 'rgba(250,204,21,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 80,
+          suggestedMax: 130
+        }
+      }
+    }
+  });
+
+  // Vitamin D
+  new Chart(document.getElementById('chartVitD'), {
+    type: 'line',
+    data: {
+      labels: ['Sep 2025', 'Oct 2025', 'Jan 2026', 'Feb 2026'],
+      datasets: [{
+        label: 'Vitamin D (ng/mL)',
+        data: [23.1, 30.3, 28.9, 45.3],
+        borderColor: '#4ade80',
+        backgroundColor: 'rgba(74,222,128,0.1)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 6
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 15,
+          suggestedMax: 80
+        }
+      }
+    }
+  });
+
+  // eGFR
+  new Chart(document.getElementById('chartGFR'), {
+    type: 'line',
+    data: {
+      labels: ['Jul 2025', 'Oct 2025', 'Jan 2026', 'Feb 2026'],
+      datasets: [{
+        label: 'eGFR (mL/min/1.73m²)',
+        data: [88, 80, 73, 74],
+        borderColor: '#6c8ebf',
+        backgroundColor: 'rgba(108,142,191,0.1)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 50,
+          suggestedMax: 100
+        }
+      }
+    }
+  });
+
+  // Lipid Panel (full)
+  new Chart(document.getElementById('chartCholesterol'), {
+    type: 'line',
+    data: {
+      labels: ['Nov 2024', 'Apr 2025', 'Aug 2025', 'Oct 2025'],
+      datasets: [
+        {
+          label: 'LDL (mg/dL)',
+          data: [111, 113, 72, 63],
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248,113,113,0.08)',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5
+        },
+        {
+          label: 'HDL (mg/dL)',
+          data: [38, 42, 68, 60],
+          borderColor: '#4ade80',
+          backgroundColor: 'rgba(74,222,128,0.08)',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5
+        },
+        {
+          label: 'Triglycerides (mg/dL)',
+          data: [128, 98, 88, 214],
+          borderColor: '#fb923c',
+          backgroundColor: 'rgba(251,146,60,0.08)',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5
+        },
+        {
+          label: 'Total Cholesterol (mg/dL)',
+          data: [175, 175, 158, 166],
+          borderColor: '#c084fc',
+          backgroundColor: 'rgba(192,132,252,0.06)',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5,
+          borderDash: [4,3]
+        }
+      ]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 30,
+          suggestedMax: 210
+        }
+      }
+    }
+  });
+
+  // eAG
+  new Chart(document.getElementById('charteAG'), {
+    type: 'bar',
+    data: {
+      labels: ['Oct 2024', 'Jul 2025', 'Sep 2025', 'Oct 2025', 'Feb 2026'],
+      datasets: [{
+        label: 'eAG (mg/dL)',
+        data: [114.02, 131.24, 111.15, 116.89, 111.15],
+        backgroundColor: ['#facc15bb', '#f87171bb', '#facc15bb', '#fb923cbb', '#facc15bb'],
+        borderColor: ['#facc15', '#f87171', '#facc15', '#fb923c', '#facc15'],
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: CHART_DEFAULTS.scales.x,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          suggestedMin: 90,
+          suggestedMax: 145
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
