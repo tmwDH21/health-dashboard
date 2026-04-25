@@ -716,8 +716,8 @@
     <div class="subtitle">David Herman · DOB 02/21/1967 · MRN 51984124 · PCP: Dr. Kiran Syed</div>
   </div>
   <div class="last-updated">
-    Data through: <strong>Feb 27, 2026</strong><br>
-    Dashboard built: March 1, 2026<br>
+    Data through: <strong>April 2026</strong><br>
+    Dashboard updated: April 22, 2026<br>
     <span style="color:var(--orange)">⚠ Not a substitute for medical advice</span>
   </div>
 </header>
@@ -738,7 +738,7 @@
   <!-- OVERVIEW TAB -->
   <div id="tab-overview" class="section active">
     <div class="section-title">Health Overview</div>
-    <div class="section-subtitle">At-a-glance summary of your most recent results. Last draw: Feb 27, 2026.</div>
+    <div class="section-subtitle">At-a-glance summary of your most recent results. Last draw: April 15, 2026 — full panel including NASH FibroSure Plus, lipids, metabolic, thyroid, B12, urinalysis.</div>
 
     <div class="overview-grid">
       <div class="ov-card">
@@ -752,34 +752,54 @@
         <div class="ov-sub status-ok">✓ Excellent (0–20)</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-warn">107</div>
+        <div class="ov-value status-high">128</div>
         <div class="ov-label">Fasting Glucose (mg/dL)</div>
-        <div class="ov-sub status-warn">⚠ Pre-diabetic zone</div>
+        <div class="ov-sub status-high">⚠ Diabetic range (≥126) — prednisone</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-ok">45.3</div>
+        <div class="ov-value status-ok">61.7</div>
         <div class="ov-label">Vitamin D (ng/mL)</div>
-        <div class="ov-sub status-ok">✓ Now in range (31–80)</div>
+        <div class="ov-sub status-ok">✓ Optimal range — D3 working</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-high">87</div>
+        <div class="ov-value status-ok">41</div>
         <div class="ov-label">ALT / SGPT (U/L)</div>
-        <div class="ov-sub status-high">⚠ Elevated (≤44)</div>
+        <div class="ov-sub status-ok">✓ Normal — down from peak 130</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-high">39</div>
+        <div class="ov-value status-ok">21</div>
         <div class="ov-label">AST / SGOT (U/L)</div>
-        <div class="ov-sub status-high">⚠ Slightly high (≤34)</div>
+        <div class="ov-sub status-ok">✓ Normal (5–34)</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-warn">74</div>
+        <div class="ov-value status-high">N2</div>
+        <div class="ov-label">NASH/MASH Grade</div>
+        <div class="ov-sub status-high">⚠ Moderate — score 0.57 (ref ≤0.25)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">F0</div>
+        <div class="ov-label">Fibrosis Stage</div>
+        <div class="ov-sub status-ok">✓ No fibrosis — score 0.19 (ref ≤0.21)</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">85</div>
         <div class="ov-label">eGFR (mL/min/1.73m²)</div>
-        <div class="ov-sub status-warn">Monitor (age-adjusted low)</div>
+        <div class="ov-sub status-ok">✓ Normal — improved from 74</div>
       </div>
       <div class="ov-card">
-        <div class="ov-value status-ok">63</div>
-        <div class="ov-label">LDL · Oct 2025 (mg/dL)</div>
-        <div class="ov-sub status-ok">✓ At target (&lt;70 for stent)</div>
+        <div class="ov-value status-warn">79</div>
+        <div class="ov-label">LDL · Apr 2026 (mg/dL)</div>
+        <div class="ov-sub status-warn">↑ Above target — was 63 Oct 2025</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-warn">274</div>
+        <div class="ov-label">Vit B12 (pg/mL)</div>
+        <div class="ov-sub status-warn">↓ Trending low — injections advised</div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-value status-ok">0.84</div>
+        <div class="ov-label">TSH (uIU/mL)</div>
+        <div class="ov-sub status-ok">✓ Normal thyroid</div>
       </div>
     </div>
 
@@ -793,7 +813,7 @@
           <div class="system-name">Cardiac</div>
           <div class="status-ring" style="background: rgba(74, 222, 128, 0.2); color: var(--green);">✓</div>
           <div class="status-text">STABLE</div>
-          <div class="status-key">LDL 63 ✓</div>
+          <div class="status-key">LDL 79 ↑</div>
         </div>
 
         <div class="system-card">
@@ -801,15 +821,15 @@
           <div class="system-name">Hepatic</div>
           <div class="status-ring" style="background: rgba(251, 146, 60, 0.2); color: var(--orange);">!</div>
           <div class="status-text">WATCH</div>
-          <div class="status-key">ALT 87↑</div>
+          <div class="status-key">MASH N2 / F0</div>
         </div>
 
         <div class="system-card">
           <div class="system-icon">🩸</div>
           <div class="system-name">Metabolic</div>
-          <div class="status-ring" style="background: rgba(250, 204, 21, 0.2); color: var(--yellow);">⚠</div>
-          <div class="status-text">WATCH</div>
-          <div class="status-key">Glucose 107</div>
+          <div class="status-ring" style="background: rgba(251, 146, 60, 0.2); color: var(--orange);">!</div>
+          <div class="status-text">ELEVATED</div>
+          <div class="status-key">Glucose 128↑</div>
         </div>
 
         <div class="system-card">
@@ -837,51 +857,57 @@
       <div class="alert-strip">
         
         <div class="alert-row" onclick="toggleAlertDetail(0)">
-          <div class="alert-icon">🔴</div>
+          <div class="alert-icon">🟠</div>
           <div class="alert-content">
-            <span class="alert-label">Liver enzymes elevated 8+ months</span>
-            <span class="alert-text">— hepatology workup needed</span>
+            <span class="alert-label">NASH/MASH: Moderate (N2) — no fibrosis (F0)</span>
+            <span class="alert-text">— FibroSure Plus April 2026</span>
             <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
           </div>
         </div>
         <div id="alert-detail-0" class="alert-detail">
-          Your ALT has been elevated since at least July 2025 (peak: 130 U/L in Jan 2026, currently 87 U/L). AST also intermittently elevated. Given your medication load — atorvastatin, metoprolol, Xanax, Suboxone, and prednisone — statin-induced hepatotoxicity or drug interaction is a real possibility. This needs a formal hepatology workup including hepatitis panel, GGT, and ultrasound if not already done. Do not ignore this trend.
+          <strong>NASH FibroSure Plus results (April 2026):</strong><br><br>
+          <strong style="color: var(--green);">✓ Fibrosis Score: 0.19 → F0 — NO fibrosis.</strong> Despite 8+ months of elevated ALT, the liver has not scarred. This is the most important number and it's as good as it gets.<br><br>
+          <strong style="color: var(--orange);">⚠ Steatosis Score: 0.68 → S2–S3 Moderate to Severe Steatosis</strong> (ref ≤0.40). Significant fat accumulation in 34–100% of liver cells.<br><br>
+          <strong style="color: var(--orange);">⚠ NASH Score: 0.57 → N2 Moderate NASH/MASH</strong> (ref ≤0.25). Active metabolic inflammation.<br><br>
+          <strong>Good news:</strong> ALT has normalized to 41 U/L (was 87, peaked at 130) — first time within normal range since July 2025. AST 21 (normal). The liver stress is resolving as the prednisone taper continues.<br><br>
+          <strong>Important caveat:</strong> This test is not recommended for drug-induced hepatitis patients. Your CYP3A4 drug interaction (diltiazem + atorvastatin + buprenorphine) may be inflating scores. Interpret with your hepatologist.<br><br>
+          <strong>MASH is reversible at F0.</strong> Drivers: glucose 128 mg/dL (diabetic range), prednisone, nicotine. Triglycerides improving to 141 mg/dL (near normal). All improve with the ongoing taper.
         </div>
 
         <div class="alert-row" onclick="toggleAlertDetail(1)">
-          <div class="alert-icon">🟠</div>
+          <div class="alert-icon">🔴</div>
           <div class="alert-content">
-            <span class="alert-label">Glucose chronically pre-diabetic</span>
-            <span class="alert-text">— HbA1c needed</span>
+            <span class="alert-label">Glucose 128 mg/dL — diabetic range (≥126)</span>
+            <span class="alert-text">— HbA1c urgently needed</span>
             <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
           </div>
         </div>
         <div id="alert-detail-1" class="alert-detail">
-          Fasting glucose has been above 100 mg/dL on every recorded draw (101–114 mg/dL). Your eAG of 111 mg/dL corresponds to an estimated HbA1c around 5.5–5.6%. With cardiac stent, arteriosclerosis, and statin use, metabolic tightening here is high priority. A formal HbA1c result is needed — the trend graphs show 5 tests but the numeric values weren't extractable from the graph images.
+          Fasting glucose has jumped from 107 mg/dL (January 2026) to 128 mg/dL (April 15, 2026) — now in the diabetic range (≥126 mg/dL). This is almost certainly prednisone-driven: glucocorticoids raise blood glucose 4–6 hours after dosing by inducing hepatic glucose production and peripheral insulin resistance. As the taper continues, this should improve. HbA1c and fasting insulin have still not been tested — these are now urgent, not just important. The NASH/MASH finding makes glucose control even more critical.
         </div>
 
         <div class="alert-row" onclick="toggleAlertDetail(2)">
           <div class="alert-icon">🟢</div>
           <div class="alert-content">
-            <span class="alert-label">Vitamin D corrected</span>
-            <span class="alert-text">— D3 5000 IU working (45.3 ng/mL)</span>
+            <span class="alert-label">Vitamin D — now optimal (61.7 ng/mL)</span>
+            <span class="alert-text">— from 23.1 in Sep 2025 to target range</span>
             <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
           </div>
         </div>
         <div id="alert-detail-2" class="alert-detail">
-          Vitamin D was low (23.1 ng/mL) in September 2025 and is now 45.3 ng/mL as of Feb 2026 — a significant improvement. Your D3 5000 IU supplementation is effective. Target optimal range is 50–70 ng/mL; consider maintaining or very slightly increasing dose.
+          Vitamin D was critically low (23.1 ng/mL) in September 2025. By February 2026 it had reached 45.3 ng/mL. As of April 15, 2026 it is 61.7 ng/mL — now solidly in the optimal range (50–70 ng/mL). Your D3 5000 IU supplementation worked. Maintain current dose and test again in 3–6 months to confirm stability.
         </div>
 
         <div class="alert-row" onclick="toggleAlertDetail(3)">
-          <div class="alert-icon">🔴</div>
+          <div class="alert-icon">🟡</div>
           <div class="alert-content">
-            <span class="alert-label">Triglycerides spiked Oct 2025 (214 mg/dL)</span>
-            <span class="alert-text">— recheck needed</span>
+            <span class="alert-label">Triglycerides 141 mg/dL — nearly normal</span>
+            <span class="alert-text">— down from 214 (Oct) → 163 (Feb) → 141 (Apr)</span>
             <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
           </div>
         </div>
         <div id="alert-detail-3" class="alert-detail">
-          Triglycerides jumped from 88 mg/dL (Aug 2025) to 214 mg/dL in October 2025 — a 143% increase in eight weeks. VLDL simultaneously rose to 43 mg/dL (normal ≤30). For context: Aug 2025 was excellent; something changed sharply between those two draws. Prednisone is a known triglyceride elevator, as is dietary sugar and refined carbohydrates. The bright side: LDL finally hit target (63 mg/dL) and HDL climbed from a Low of 38 (Nov 2024) to 60. But the triglyceride/VLDL picture needs a current fasting recheck — this data is now 5 months old.
+          Triglycerides have fallen steadily: 214 mg/dL (October 2025) → 163 mg/dL (February 2026) → 141 mg/dL (April 15, 2026). Now just 8 mg/dL above normal (≤149 mg/dL). Total cholesterol 157 mg/dL (excellent). HDL 50 mg/dL (normal). On track to normalize as the prednisone taper continues. Reducing dietary sugar and refined carbohydrates will accelerate this — also important for MASH management.
         </div>
 
         <div class="alert-row" onclick="toggleAlertDetail(4)">
@@ -896,13 +922,49 @@
           Both CRP (0.5 mg/L) and ESR (&lt;1 mm/HR) are now near-perfect. The elevated values seen in August–September 2025 (ESR up to 20, CRP up to 1.7) have fully normalized, likely reflecting the prednisone taper resolving underlying inflammation or autoimmune activity.
         </div>
 
+        <div class="alert-row" onclick="toggleAlertDetail(5)">
+          <div class="alert-icon">🟡</div>
+          <div class="alert-content">
+            <span class="alert-label">LDL crept up 63 → 79 mg/dL — doctor wants &lt;60</span>
+            <span class="alert-text">— dietary intervention needed</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-5" class="alert-detail">
+          LDL was 63 mg/dL in October 2025 and has risen to 79 mg/dL on the April 15, 2026 draw. Doctor's note: "We want this number to be less than 60 ideally. Please reduce red meat (beef/pork), reduce full fat dairy and baked goods. Mediterranean diet is best for heart and liver." Atorvastatin + ezetimibe are already on board. Dietary changes per doctor's recommendation plus recheck in 6–8 weeks. If LDL remains above 70, discuss dose escalation or PCSK9 inhibitor with your cardiologist.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(6)">
+          <div class="alert-icon">🟡</div>
+          <div class="alert-content">
+            <span class="alert-label">B12 trending down — monthly injections recommended</span>
+            <span class="alert-text">— 274 pg/mL (was 358, doctor wants &gt;400)</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-6" class="alert-detail">
+          Vitamin B12 has fallen from 358 pg/mL (October 2025) to 274 pg/mL (April 2026). Still within standard lab range but your doctor targets above 400. Doctor's note: "B12 low — he can come to office for monthly injections. This would increase it quickly. Helps with energy, number needs to be above 400. Patients get 3 doses then we repeat B12 levels at lab." B12 deficiency overlaps significantly with fatigue, cognitive fog, and mood disturbance — all relevant given your current recovery context. Schedule the injection series.
+        </div>
+
+        <div class="alert-row" onclick="toggleAlertDetail(7)">
+          <div class="alert-icon">🟠</div>
+          <div class="alert-content">
+            <span class="alert-label">Urine: trace protein + crystals — repeat in 1 month</span>
+            <span class="alert-text">— dehydration; doctor monitoring protein</span>
+            <span class="toggle-expand" onclick="event.stopPropagation();">▼ Details</span>
+          </div>
+        </div>
+        <div id="alert-detail-7" class="alert-detail">
+          The April 15 urinalysis showed: <strong>dark yellow/turbid</strong> color, <strong>amorphous urate crystals (many)</strong>, and <strong>trace protein</strong>. The first two are classic dehydration. Doctor's note: "Urine has a lot of crystals — please increase overall water intake. At least 64 fl oz a day. We will repeat urine sample in 1 month to assess protein." The trace protein needs to clear on follow-up — persistent proteinuria is an early marker of kidney stress. Good news: eGFR improved from 74 → 85. <strong>Action: ≥64 fl oz water/day, schedule repeat UA by May 15, 2026.</strong>
+        </div>
+
       </div>
     </div>
   </div>
   <!-- THIS WEEK TAB -->
   <div id="tab-focus" class="section">
     <div class="section-title">This Week's Focus</div>
-    <div class="section-subtitle">Three priorities that matter most right now. Updated March 2026.</div>
+    <div class="section-subtitle">Three priorities that matter most right now. Updated April 22, 2026.</div>
 
     <!-- PRIORITY TILES -->
     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px;">
@@ -924,9 +986,9 @@
         <div class="priority-content">
           <div class="priority-title">🟠 Prednisone Taper</div>
           <ul class="priority-items" style="list-style: none; padding: 0;">
-            <li>Current: 8.5mg daily</li>
-            <li>Drop to 8mg on Mar 17</li>
-            <li>Monitor for symptoms</li>
+            <li>Current: 6mg daily (dropped Apr 13)</li>
+            <li>Next drop: 5.5mg — May 4</li>
+            <li>Target zero: Apr 2027</li>
           </ul>
           <div class="status-badge" style="background: var(--orange); color: #000;">On Schedule</div>
         </div>
